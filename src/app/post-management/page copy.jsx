@@ -13,12 +13,14 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import LabelImportantIcon from '@mui/icons-material/LabelImportant';
+import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
 
 // Toast Component
 const Toast = ({ message, type = "success" }) => (
-  <div className={`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 animate-slide-in ${
-    type === "success" ? "bg-green-500" : "bg-red-500"
-  } text-white`}>
+  <div className={`fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 animate-slide-in ${type === "success" ? "bg-green-500" : "bg-red-500"
+    } text-white`}>
     {message}
   </div>
 );
@@ -131,19 +133,17 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
 const TabButton = ({ tab, isActive, onClick, count }) => (
   <button
     onClick={onClick}
-    className={`flex items-center justify-center gap-2 px-4 py-3 md:px-5 md:py-3.5 rounded-xl border-2 text-sm md:text-base font-bold transition-all flex-1 min-w-0 shadow-sm hover:shadow-md ${
-      isActive
-        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent scale-105"
-        : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-    }`}
+    className={`flex items-center justify-center gap-2 px-4 py-3 md:px-5 md:py-3.5 rounded-xl border-2 text-sm md:text-base font-bold transition-all flex-1 min-w-0 shadow-sm hover:shadow-md ${isActive
+      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent scale-105"
+      : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+      }`}
   >
     <tab.icon className="w-5 h-5 flex-shrink-0" />
     <span className="truncate hidden sm:inline">{tab.label}</span>
     <span className="truncate sm:hidden">{tab.shortLabel || tab.label}</span>
     <span
-      className={`px-2.5 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ${
-        isActive ? "bg-white/25 text-white" : "bg-blue-100 text-blue-700"
-      }`}
+      className={`px-2.5 py-0.5 rounded-full text-xs font-bold flex-shrink-0 ${isActive ? "bg-white/25 text-white" : "bg-blue-100 text-blue-700"
+        }`}
     >
       {count}
     </span>
@@ -151,27 +151,86 @@ const TabButton = ({ tab, isActive, onClick, count }) => (
 );
 
 // Post Card Component
-const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject }) => (
+const PostCard = ({ post,showFull,setShowFull, scheduleDates, onDateChange, onUpdateStatus, onReject, handleDownload, handleShare, handlePost,isEditing,setIsEditing }) => (
   <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all">
-    <div className="relative">
-      <img
-        src={post?.output || "https://via.placeholder.com/400"}
-        alt="Post"
-        className="w-full h-56 md:h-64 object-cover"
-      />
-      <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${
-        post.status === "pending" ? "bg-yellow-500 text-white" :
-        post.status === "approved" ? "bg-green-500 text-white" :
-        "bg-blue-500 text-white"
-      }`}>
-        {post.status.toUpperCase()}
+    <a href={post.aiOutput} target="_blank">
+      <div className="relative">
+        <img
+          src={post?.aiOutput || "https://via.placeholder.com/400"}
+          alt="Post"
+          className="w-full h-56 md:h-64 object-cover"
+        />
+        <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${post.status === "pending" ? "bg-yellow-500 text-white" :
+          post.status === "approved" ? "bg-green-500 text-white" :
+            "bg-blue-500 text-white"
+          }`}>
+          {post.status.toUpperCase()}
+        </div>
       </div>
-    </div>
-    
+    </a>
+
     <div className="p-5 space-y-4">
-      <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed">
-        <strong className="text-gray-900">Prompt:</strong> {post.prompt}
+   <div className="mt-2">
+    <strong className="text-gray-900 block mb-1">Description:</strong>
+
+    {isEditing ? (
+      <textarea
+        value={post?.description}
+        onChange={(e) => setDescription(e.target.value)}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800 text-sm"
+        rows={5}
+      />
+    ) : (
+      <p
+        className={`text-sm text-gray-700 ${
+          showFull ? "" : "line-clamp-4"
+        }`}
+      >
+        {post?.description || "No description available"}
       </p>
+    )}
+
+    {post?.description?.length > 150 && !isEditing && (
+      <button
+        onClick={() => setShowFull(!showFull)}
+        className="text-blue-600 text-sm font-medium mt-1 hover:underline"
+      >
+        {showFull ? "View Less" : "View More"}
+      </button>
+    )}
+
+    <div className="mt-3 flex gap-3">
+      {isEditing ? (
+        <>
+          <button
+            onClick={() => {
+              // You can handle save logic here (API or state update)
+              setIsEditing(false);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => {
+              setDescription(post?.description || "");
+              setIsEditing(false);
+            }}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={() => setIsEditing(true)}
+          className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
+        >
+          Edit Description
+        </button>
+      )}
+    </div>
+  </div>
       <p className="text-xs text-gray-500 flex items-center gap-1">
         <Calendar className="w-3 h-3" />
         {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}
@@ -200,12 +259,21 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject 
 
         {post.status === "approved" && (
           <div className="flex flex-col gap-3 w-full">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                <Download className="w-4 h-4" /> Download
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => handleDownload(post)}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
               </button>
-              <button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                <Share2 className="w-4 h-4" /> Share
+
+              <button
+                onClick={() => handleShare(post)}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
               </button>
             </div>
 
@@ -214,8 +282,13 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject 
                 type="datetime-local"
                 value={scheduleDates[post._id] || ""}
                 onChange={(e) => onDateChange(post._id, e.target.value)}
-                className="border-2 border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                min={new Date().toISOString().slice(0, 16)} // 🚫 disables past date/time
+                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-green-400 transition-all cursor-pointer"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                You can only select current or future date & time
+              </p>
+
               <button
                 onClick={() => onUpdateStatus(post._id, "scheduled")}
                 className="bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -228,28 +301,60 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject 
         )}
 
         {post.status === "scheduled" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-gray-700 font-medium">
-              📅 Scheduled for:
-            </p>
-            <p className="text-blue-700 font-bold mt-1">
-              {post.scheduledDate
-                ? new Date(post.scheduledDate).toLocaleString("en-IN", {
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-3 space-y-4">
+            {/* Scheduled Info */}
+            <div>
+              <p className="text-sm text-gray-700 font-medium flex items-center gap-2">
+                📅 Scheduled for:
+              </p>
+              <p className="text-blue-700 font-bold mt-1">
+                {post.scheduledDate
+                  ? new Date(post.scheduledDate).toLocaleString("en-IN", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
                   })
-                : "Not set"}
-            </p>
+                  : "Not set"}
+              </p>
+            </div>
+
+            {/* Download + Share Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => handleDownload(post)}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </button>
+
+              <button
+                onClick={() => handleShare(post)}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
+            </div>
+
+            {/* Post Button (Separate Line) */}
+            <div className="pt-2">
+              <button
+                onClick={() => handlePost(post)}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LabelImportantIcon className="w-4 h-4" />
+                Post
+              </button>
+            </div>
           </div>
         )}
-        <a href={post.output} target="_blank" rel="noopener noreferrer">
-  <button className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer">
-    See Full Post
-  </button>
-</a>
+
+
+
+
 
       </div>
     </div>
@@ -258,15 +363,29 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject 
 
 // Main Component
 export default function PostManagement() {
+  const { data: session } = useSession()
+  const {slug} = useParams();
+
+  console.log("slugslug",slug);
+  
+
+  console.log("data111111111111111111", session);
+  const [savedPost, setSavedPost] = useState()
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [posts, setPosts] = useState([]);
-    const [aiResponse, setAiResponse] = useState(null);
+  const [aiResponse, setAiResponse] = useState(null);
 
   const [activeTab, setActiveTab] = useState("total");
   const [prompt, setPrompt] = useState("");
   const [scheduleDates, setScheduleDates] = useState({});
   const [logo, setLogo] = useState(null);
   const [toast, setToast] = useState(null);
+    const [showFull, setShowFull] = useState(false);
+      const [isEditing, setIsEditing] = useState(false);
+      
+
+
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -281,34 +400,44 @@ export default function PostManagement() {
   });
 
   const tabs = [
-    { id: "total", label: "Total Posts", shortLabel: "Total", icon: ImageIcon, count: allCounts.total },
-    { id: "approved", label: "Approved", shortLabel: "Approved", icon: CheckCircle, count: allCounts.approved },
     { id: "pending", label: "Pending", shortLabel: "Pending", icon: Clock, count: allCounts.pending },
+    { id: "approved", label: "Approved", shortLabel: "Approved", icon: CheckCircle, count: allCounts.approved },
     { id: "scheduled", label: "Scheduled", shortLabel: "Scheduled", icon: Calendar, count: allCounts.scheduled },
+    { id: "total", label: "Total Posts", shortLabel: "Total", icon: ImageIcon, count: allCounts.total },
   ];
 
+
+  console.log("logo", logo);
   const fetchPosts = async (status) => {
     try {
-      const url = status === "total" ? "/api/post-status" : `/api/post-status?status=${status}`;
+      const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
+
+      // build url with userId and optional status
+      const url =
+        status === "total"
+          ? `/api/post-status?userId=${userId}`
+          : `/api/post-status?userId=${userId}&status=${status}`;
+
       const res = await fetch(url);
       const data = await res.json();
-      
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Failed to fetch posts");
       }
 
       setPosts(data.data);
 
-      const allPostsRes = await fetch("/api/post-status");
+      // ✅ fetch all posts again for counts
+      const allPostsRes = await fetch(`/api/post-status?userId=${userId}`);
       const allPostsData = await allPostsRes.json();
-      
+
       if (allPostsRes.ok && allPostsData.success) {
         const allPosts = allPostsData.data;
         const total = allPosts.length;
         const approved = allPosts.filter((p) => p.status === "approved").length;
         const pending = allPosts.filter((p) => p.status === "pending").length;
         const scheduled = allPosts.filter((p) => p.status === "scheduled").length;
-        
+
         setAllCounts({ total, approved, pending, scheduled });
       }
     } catch (err) {
@@ -316,7 +445,19 @@ export default function PostManagement() {
     }
   };
 
+
+  // Helper: File -> Base64 string
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (err) => reject(err);
+    });
+
   const handleAiAgent = async () => {
+    const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
+
     if (!prompt.trim()) {
       showToast("Please enter a prompt before generating!", "error");
       return;
@@ -324,45 +465,85 @@ export default function PostManagement() {
 
     try {
       setIsGenerating(true);
-            setAiResponse(null); // Clear previous response
+      setAiResponse(null);
 
+      // --- 1️⃣ Convert logo file to base64 (if provided) ---
+      let logoBase64 = null;
+      if (logo) {
+        logoBase64 = await fileToBase64(logo);
+      }
 
+      // --- 2️⃣ Call AI Agent API with JSON body ---
       const res = await fetch("/api/aiAgent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ promat: prompt }),
-      });
-
-      if (!res.ok) throw new Error("Failed to generate post");
-
-      const data = await res.json();
-
-      setAiResponse(data);
-
-      const postRes = await fetch("/api/post-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: prompt,
-          output: data.data?.output || data.output,
+          logo: logoBase64, // base64 string instead of file
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to generate post from AI agent.");
+      }
+
+      const apiResponse = await res.json();
+      console.log("apiResponse", apiResponse);
+
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || "AI agent failed with no specific error.");
+      }
+
+      const data = apiResponse.data || {};
+      const aiOutput = data.output; // AI-generated image/post URL
+      const logoUrl = data.logoUrl; // Cloudinary logo URL
+      const description = data.description
+
+      console.log("data.output", data.output);
+
+
+      // ✅ Save successful AI agent response
+      setAiResponse(data);
+
+      // --- 3️⃣ Save post in MongoDB ---
+      const postRes = await fetch("/api/post-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId, // Replace with real logged-in user ID
+          aiOutput,
+          description,
+          logoUrl, // optional field
           status: "pending",
         }),
       });
 
       const postData = await postRes.json();
-      if (!postData.success) throw new Error(postData.error || "Failed to save post");
 
+      if (!postData.success) {
+        throw new Error(postData.error || "Failed to save post in database.");
+      }
+
+      // --- 4️⃣ Update frontend state ---
       setPosts((prev) => [postData.data, ...prev]);
-      setAllCounts((prev) => ({ ...prev, total: prev.total + 1, pending: prev.pending + 1 }));
-      showToast("AI Post Generated Successfully! 🎉");
+      setAllCounts((prev) => ({
+        ...prev,
+        total: prev.total + 1,
+        pending: prev.pending + 1,
+      }));
+
+      showToast("AI Post Generated & Saved Successfully! 🎉");
       setPrompt("");
       setLogo(null);
     } catch (error) {
-      showToast("Failed to generate AI post!", "error");
+      console.error("Generation Error:", error);
+      showToast(error.message || "Failed to generate AI post!", "error");
     } finally {
       setIsGenerating(false);
     }
   };
+
 
   const handleDateChange = (id, value) => {
     setScheduleDates((prev) => ({ ...prev, [id]: value }));
@@ -370,6 +551,8 @@ export default function PostManagement() {
 
   const handleUpdateStatus = async (id, newStatus) => {
     const scheduleDate = scheduleDates[id];
+    const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
+
 
     if (newStatus === "scheduled" && !scheduleDate) {
       showToast("Please select a schedule date!", "error");
@@ -384,10 +567,12 @@ export default function PostManagement() {
           id,
           status: newStatus,
           scheduledDate: scheduleDate,
+          userId: userId, // ✅ pass userId
         }),
       });
-      const data = await res.json();
 
+
+      const data = await res.json();
       if (!res.ok || !data.success) {
         showToast(data.error || "Failed to update post", "error");
         return;
@@ -397,7 +582,9 @@ export default function PostManagement() {
 
       setPosts((prev) =>
         prev.map((p) =>
-          p._id === id ? { ...p, status: newStatus, scheduledDate: data.data.scheduledDate } : p
+          p._id === id
+            ? { ...p, status: newStatus, scheduledDate: data.data.scheduledDate }
+            : p
         )
       );
 
@@ -407,13 +594,77 @@ export default function PostManagement() {
     }
   };
 
+
+
+  
+
+  const handlePost = async (post) => {
+    const fullAccount = localStorage.getItem("accountId"); // "accounts/100262617409791423070"
+const accountId = fullAccount.split("/").pop(); // "100262617409791423070"
+const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
+
+console.log("payloadDetails:", payloadDetails);
+console.log("Locality:", payloadDetails?.locality);
+console.log("Website:", payloadDetails?.website);
+
+
+console.log("accountId",accountId);
+
+    try {
+      const response = await fetch(
+        "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+        {  
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            city: slug,
+            account: accountId,
+            bookUrl:
+            payloadDetails?.website,
+            output:
+            post.aiOutput,
+            description:
+            post.description,
+            cityName: payloadDetails?.locality,
+            accessToken:
+              session.accessToken,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("responseresponse", data);
+      setSavedPost(data)
+      console.log("✅ Successfully sent data:", data);
+      alert("Post successfully sent to webhook!");
+    } catch (error) {
+      console.error("❌ Error sending data:", error);
+      alert("Failed to send post. Please check console for details.");
+    }
+  };
+
+
+  console.log("ASDFGHJK", posts);
+
+
   const handleReject = async (id) => {
+    const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
+
     if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const res = await fetch(`/api/post-status?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/post-status?id=${id}&userId=${userId}`, { // ✅ add userId in query
+        method: "DELETE",
+      });
+
       const data = await res.json();
-      
+
       if (res.ok && data.success) {
         showToast("Post deleted successfully! 🗑️");
         const removed = posts.find((p) => p._id === id);
@@ -436,6 +687,95 @@ export default function PostManagement() {
     }
   };
 
+
+  const handleDownload = async (post) => {
+    console.log("Downloading image:", post);
+
+    if (!post.aiOutput) {
+      alert("No image available to download.");
+      return;
+    }
+
+    try {
+      let imageBlob;
+      let extension = "jpg"; // default fallback
+
+      // 🖼️ Case 1: Direct Image URL (e.g. https://example.com/image.jpg)
+      if (post.aiOutput.startsWith("http")) {
+        const response = await fetch(post.aiOutput);
+        if (!response.ok) throw new Error("Failed to fetch image.");
+        imageBlob = await response.blob();
+
+        // Extract file extension from Content-Type or URL
+        const contentType = response.headers.get("Content-Type");
+        if (contentType && contentType.startsWith("image/")) {
+          extension = contentType.split("/")[1];
+        } else {
+          const urlExt = post.aiOutput.split(".").pop().split("?")[0];
+          if (["jpg", "jpeg", "png", "webp", "svg"].includes(urlExt)) {
+            extension = urlExt;
+          }
+        }
+      }
+
+      // 🧬 Case 2: Base64 Data (e.g. data:image/jpeg;base64,...)
+      else if (post.aiOutput.startsWith("data:image")) {
+        const [meta, base64Data] = post.aiOutput.split(",");
+        const mimeType = meta.match(/:(.*?);/)[1];
+        const byteString = atob(base64Data);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        imageBlob = new Blob([ab], { type: mimeType });
+        extension = mimeType.split("/")[1];
+      }
+
+      // ❌ Invalid format
+      else {
+        alert("Invalid image format.");
+        return;
+      }
+
+      // ✅ Download logic
+      const url = URL.createObjectURL(imageBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${post.prompt?.slice(0, 30)?.replace(/\s+/g, "_") || "ai-image"}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Optional success toast
+      console.log(`✅ Downloaded as .${extension}`);
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Failed to download image. Please try again.");
+    }
+  };
+
+
+  // 🔗 Share handler
+  const handleShare = async (post) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Check out this post",
+          text: post.aiOutput || "AI-generated content",
+        });
+      } catch (err) {
+        console.error("Share cancelled or failed", err);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(post.aiOutput || "").then(() => {
+        alert("Post content copied to clipboard!");
+      });
+    }
+  };
+
   useEffect(() => {
     fetchPosts(activeTab);
   }, [activeTab]);
@@ -445,6 +785,10 @@ export default function PostManagement() {
   }, []);
 
   const filteredPosts = activeTab === "total" ? posts : posts.filter((post) => post.status === activeTab);
+
+
+  console.log("post", posts);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -474,18 +818,18 @@ export default function PostManagement() {
           animation: shimmer 2s infinite;
         }
       `}</style>
-      
+
       <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
         {toast && <Toast message={toast.message} type={toast.type} />}
         {isGenerating && <LoadingOverlay />}
 
         {/* Header */}
-       <div className="rounded-2xl p-6 md:p-8 mt-16 sm:mt-8 shadow-xl border-4 border-indigo-400 relative">
-  {/* <div className="rounded-xl p-6 md:p-8 border-2 border-pink-400 bg-white"> */}
-    <h1 className="text-3xl md:text-4xl font-black text-black mb-2">✨ Post Management</h1>
-    <p className="text-gray-600 text-sm md:text-base">Create stunning GMB posts with AI in seconds</p>
-  {/* </div> */}
-</div>
+        <div className="rounded-2xl p-6 md:p-8 mt-16 sm:mt-8 shadow-xl border-4 border-indigo-400 relative">
+          {/* <div className="rounded-xl p-6 md:p-8 border-2 border-pink-400 bg-white"> */}
+          <h1 className="text-3xl md:text-4xl font-black text-black mb-2">✨ Post Management</h1>
+          <p className="text-gray-600 text-sm md:text-base">Create stunning GMB posts with AI in seconds</p>
+          {/* </div> */}
+        </div>
 
 
         {/* Post Input */}
@@ -518,10 +862,18 @@ export default function PostManagement() {
               <PostCard
                 key={post._id}
                 post={post}
+                aiResponse={aiResponse}
                 scheduleDates={scheduleDates}
                 onDateChange={handleDateChange}
+                handleDownload={handleDownload}
+                handleShare={handleShare}
                 onUpdateStatus={handleUpdateStatus}
                 onReject={handleReject}
+                handlePost={handlePost}
+                setShowFull={setShowFull}
+                showFull={showFull}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing}
               />
             ))}
           </div>
@@ -530,7 +882,7 @@ export default function PostManagement() {
             <div className="text-6xl mb-4">📭</div>
             <p className="text-gray-600 text-lg font-medium">No posts found in this category</p>
             <p className="text-gray-500 text-sm mt-2">Create your first AI-powered post above!</p>
-          </div>
+          </div>  
         )}
       </div>
     </div>

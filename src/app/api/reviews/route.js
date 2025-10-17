@@ -1,57 +1,61 @@
-import { NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/googleAuth"
+import { NextResponse } from "next/server";
 
-const accountId = "116862092928692422428"
-const locationId = "1940115651408221204"
+const accountId = "116862092928692422428";
+const locationId = "1940115651408221204";
 
 export async function GET() {
   try {
-    const token = await getAccessToken()
-
     const res = await fetch(
       `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/reviews`,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`, // server-only token
+        },
       }
-    )
-    if (!res.ok) {
-      const error = await res.text()
-      return NextResponse.json({ error }, { status: res.status })
-    }
-
-    const data = await res.json()
-    return NextResponse.json(data)
+    );
+    const data = await res.json();
+    return NextResponse.json(data);
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error(err);
+    return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
   }
 }
 
+
 export async function PUT(req) {
   try {
-    const { reviewId } = await req.json()
-    const token = await getAccessToken()
+    const { reviewId, comment } = await req.json();
 
-    const res = await fetch(
-      `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/reviews/${reviewId}/reply`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          comment: "Thank you for visiting our business!",
-        }),
-      }
-    )
-
-    if (!res.ok) {
-      const error = await res.text()
-      return NextResponse.json({ error }, { status: res.status })
+    if (!reviewId || !comment) {
+      return NextResponse.json(
+        { error: "Both reviewId and comment are required" },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ success: true })
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    const url = `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/reviews/${reviewId}/reply`;
+
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ comment }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      console.error("GMB API Error:", data);
+      return NextResponse.json(data, { status: res.status });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error("PUT Error:", error);
+    return NextResponse.json(
+      { error: "Failed to post reply" },
+      { status: 500 }
+    );
   }
 }

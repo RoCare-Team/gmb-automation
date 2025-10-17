@@ -13,7 +13,7 @@ export async function POST(req) {
   try {
     // 1. Incoming Request Body (JSON) ko parse karein
     const body = await req.json();
-    const { promat, logo } = body;
+    const { prompt, logo } = body;
     let finalLogoUrl = logo; // Default to the original logo URL
 
     // Postman mein dikhaye gaye format: { "promet": "...", "logo": "..." }
@@ -34,7 +34,7 @@ export async function POST(req) {
     
     // 3. n8n ke liye naya payload taiyar karein
     newPayload = {
-      promat: promat,
+      prompt: prompt,
       logo: finalLogoUrl,
       // Agar body mein koi aur field ho toh, aap unhe bhi yahan include kar sakte hain.
     };

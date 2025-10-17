@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 const PostSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true }, // ✅ remove unique:true
-    prompt: { type: String, required: true },
-    output: { type: String }, // AI image URL
+    aiOutput: { type: String }, // AI image URL
+    description:{type: String},
     status: {
       type: String,
       enum: ["pending", "approved", "scheduled"],

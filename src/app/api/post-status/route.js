@@ -49,15 +49,15 @@ export async function POST(req) {
   try {
     await dbConnect();
 
-    const { userId, prompt, status } = await req.json();
-    if (!userId || !prompt) {
+    const { userId, status,aiOutput,description } = await req.json();
+    if (!userId  || !aiOutput || !description) {
       return json({ success: false, error: "userId and prompt are required" }, 400);
     }
 
     const newPost = await Post.create({
       userId,
-      prompt,
-      
+      aiOutput,
+      description,
       status: status || "pending",
     });
 

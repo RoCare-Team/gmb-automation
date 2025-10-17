@@ -10,25 +10,19 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
 
   // ✅ Fetch Google My Business reviews
-  const fetchReviews = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(
-        `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/reviews`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-          },
-        }
-      );
-      const data = await res.json();
-      setReviews(data.reviews || []);
-    } catch (err) {
-      console.error("Error fetching reviews:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchReviews = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch("/api/reviews"); // ✅ call your server route
+    const data = await res.json();
+    setReviews(data.reviews || []);
+  } catch (err) {
+    console.error("Error fetching reviews:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+  
 
   useEffect(() => {
     fetchReviews();
@@ -140,6 +134,9 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+
+  console.log("reviews",reviews);
+  
 
   // 🧩 Page Layout
   return (
