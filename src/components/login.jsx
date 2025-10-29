@@ -87,6 +87,7 @@ export default function LoginPage() {
       } else if (res.ok && data.token) {
         // Existing user - login successful
         localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.user.userId);
         showMessage("Login successful! Redirecting...", "success");
         router.push("/subscription")
       } else {
@@ -123,6 +124,8 @@ export default function LoginPage() {
 
       if (res.ok && data.token) {
         localStorage.setItem("token", data.token);
+                localStorage.setItem("userId", data.user.userId);
+
         showMessage("Registration complete! Redirecting...", "success");
         router.push("/subscription")
       } else {
