@@ -85,7 +85,6 @@ export default function LoginPage() {
         setTimeout(() => setStep("details"), 500);
       } else if (res.ok) {
         localStorage.setItem("token", data.token);
-        localStorage.setItem("userId", data.user.userId);
         showMessage("Login successful! Redirecting...", "success");
         setTimeout(() => router.push(data.redirectTo || "/subscription"), 1000);
       } else {
@@ -172,7 +171,7 @@ export default function LoginPage() {
             <Lock className="text-blue-600" size={32} />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">GMB Automation</h1>
-          <p className="text-blue-100 text-sm">Secure Login</p>
+          <p className="text-blue-100 text-sm">Secure Login Portal</p>
         </div>
 
         {/* Form Content */}
