@@ -88,8 +88,6 @@ export default function DashboardPage() {
 
   const listRef = useRef()
 
-  const UserName = localStorage.getItem("fullName")
-
   // --- Fetch Accounts & Locations ---
   const fetchInitialData = async (pageToken = null) => {
     if (!session?.accessToken) return;
@@ -287,7 +285,7 @@ const handleListingData = (listing) => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 AI GMB Auto Management
               </h1>
-              <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name ||UserName} 👋</p>
+              <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name || "User"} 👋</p>
             </div>
 
             {accounts.length < maxAccounts && (
