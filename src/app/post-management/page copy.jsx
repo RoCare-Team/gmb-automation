@@ -151,7 +151,7 @@ const TabButton = ({ tab, isActive, onClick, count }) => (
 );
 
 // Post Card Component
-const PostCard = ({ post,showFull,setShowFull, scheduleDates, onDateChange, onUpdateStatus, onReject, handleDownload, handleShare, handlePost,isEditing,setIsEditing }) => (
+const PostCard = ({ post, showFull, setShowFull, scheduleDates, onDateChange, onUpdateStatus, onReject, handleDownload, handleShare, handlePost, isEditing, setIsEditing }) => (
   <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all">
     <a href={post.aiOutput} target="_blank">
       <div className="relative">
@@ -170,67 +170,66 @@ const PostCard = ({ post,showFull,setShowFull, scheduleDates, onDateChange, onUp
     </a>
 
     <div className="p-5 space-y-4">
-   <div className="mt-2">
-    <strong className="text-gray-900 block mb-1">Description:</strong>
+      <div className="mt-2">
+        <strong className="text-gray-900 block mb-1">Description:</strong>
 
-    {isEditing ? (
-      <textarea
-        value={post?.description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800 text-sm"
-        rows={5}
-      />
-    ) : (
-      <p
-        className={`text-sm text-gray-700 ${
-          showFull ? "" : "line-clamp-4"
-        }`}
-      >
-        {post?.description || "No description available"}
-      </p>
-    )}
-
-    {post?.description?.length > 150 && !isEditing && (
-      <button
-        onClick={() => setShowFull(!showFull)}
-        className="text-blue-600 text-sm font-medium mt-1 hover:underline"
-      >
-        {showFull ? "View Less" : "View More"}
-      </button>
-    )}
-
-    <div className="mt-3 flex gap-3">
-      {isEditing ? (
-        <>
-          <button
-            onClick={() => {
-              // You can handle save logic here (API or state update)
-              setIsEditing(false);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+        {isEditing ? (
+          <textarea
+            value={post?.description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-800 text-sm"
+            rows={5}
+          />
+        ) : (
+          <p
+            className={`text-sm text-gray-700 ${showFull ? "" : "line-clamp-4"
+              }`}
           >
-            Save
-          </button>
+            {post?.description || "No description available"}
+          </p>
+        )}
+
+        {post?.description?.length > 150 && !isEditing && (
           <button
-            onClick={() => {
-              setDescription(post?.description || "");
-              setIsEditing(false);
-            }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
+            onClick={() => setShowFull(!showFull)}
+            className="text-blue-600 text-sm font-medium mt-1 hover:underline"
           >
-            Cancel
+            {showFull ? "View Less" : "View More"}
           </button>
-        </>
-      ) : (
-        <button
-          onClick={() => setIsEditing(true)}
-          className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
-        >
-          Edit Description
-        </button>
-      )}
-    </div>
-  </div>
+        )}
+
+        <div className="mt-3 flex gap-3">
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => {
+                  // You can handle save logic here (API or state update)
+                  setIsEditing(false);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setDescription(post?.description || "");
+                  setIsEditing(false);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200"
+            >
+              Edit Description
+            </button>
+          )}
+        </div>
+      </div>
       <p className="text-xs text-gray-500 flex items-center gap-1">
         <Calendar className="w-3 h-3" />
         {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}
@@ -364,12 +363,10 @@ const PostCard = ({ post,showFull,setShowFull, scheduleDates, onDateChange, onUp
 // Main Component
 export default function PostManagement() {
   const { data: session } = useSession()
-  const {slug} = useParams();
+  const { slug } = useParams();
 
-  console.log("slugslug",slug);
-  
 
-  console.log("data111111111111111111", session);
+
   const [savedPost, setSavedPost] = useState()
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -381,9 +378,9 @@ export default function PostManagement() {
   const [scheduleDates, setScheduleDates] = useState({});
   const [logo, setLogo] = useState(null);
   const [toast, setToast] = useState(null);
-    const [showFull, setShowFull] = useState(false);
-      const [isEditing, setIsEditing] = useState(false);
-      
+  const [showFull, setShowFull] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
 
 
 
@@ -407,7 +404,6 @@ export default function PostManagement() {
   ];
 
 
-  console.log("logo", logo);
   const fetchPosts = async (status) => {
     try {
       const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
@@ -489,7 +485,6 @@ export default function PostManagement() {
       }
 
       const apiResponse = await res.json();
-      console.log("apiResponse", apiResponse);
 
       if (!apiResponse.success) {
         throw new Error(apiResponse.error || "AI agent failed with no specific error.");
@@ -500,7 +495,6 @@ export default function PostManagement() {
       const logoUrl = data.logoUrl; // Cloudinary logo URL
       const description = data.description
 
-      console.log("data.output", data.output);
 
 
       // ✅ Save successful AI agent response
@@ -596,24 +590,17 @@ export default function PostManagement() {
 
 
 
-  
+
 
   const handlePost = async (post) => {
     const fullAccount = localStorage.getItem("accountId"); // "accounts/100262617409791423070"
-const accountId = fullAccount.split("/").pop(); // "100262617409791423070"
-const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
-
-console.log("payloadDetails:", payloadDetails);
-console.log("Locality:", payloadDetails?.locality);
-console.log("Website:", payloadDetails?.website);
-
-
-console.log("accountId",accountId);
+    const accountId = fullAccount.split("/").pop(); // "100262617409791423070"
+    const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
 
     try {
       const response = await fetch(
         "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
-        {  
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -622,11 +609,11 @@ console.log("accountId",accountId);
             city: slug,
             account: accountId,
             bookUrl:
-            payloadDetails?.website,
+              payloadDetails?.website,
             output:
-            post.aiOutput,
+              post.aiOutput,
             description:
-            post.description,
+              post.description,
             cityName: payloadDetails?.locality,
             accessToken:
               session.accessToken,
@@ -785,10 +772,7 @@ console.log("accountId",accountId);
   }, []);
 
   const filteredPosts = activeTab === "total" ? posts : posts.filter((post) => post.status === activeTab);
-
-
-  console.log("post", posts);
-
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -882,7 +866,7 @@ console.log("accountId",accountId);
             <div className="text-6xl mb-4">📭</div>
             <p className="text-gray-600 text-lg font-medium">No posts found in this category</p>
             <p className="text-gray-500 text-sm mt-2">Create your first AI-powered post above!</p>
-          </div>  
+          </div>
         )}
       </div>
     </div>

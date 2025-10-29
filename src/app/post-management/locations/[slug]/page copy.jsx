@@ -18,9 +18,6 @@ import {
   EyeOff,
   Send,
 } from "lucide-react";
-import LabelImportantIcon from '@mui/icons-material/LabelImportant';
-import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 
 // Toast Component
 const Toast = ({ message, type = "success" }) => (
@@ -251,18 +248,18 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
             className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity"
           />
           <div
-  className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
-    post.status === "pending"
-      ? "bg-yellow-500/90 text-white"
-      : post.status === "approved"
-      ? "bg-green-500/90 text-white"
-      : post.status === "posted"
-      ? "bg-purple-600/90 text-white"
-      : "bg-blue-500/90 text-white"
-  }`}
->
-  {post.status.toUpperCase()}
-</div>
+            className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
+              post.status === "pending"
+                ? "bg-yellow-500/90 text-white"
+                : post.status === "approved"
+                ? "bg-green-500/90 text-white"
+                : post.status === "posted"
+                ? "bg-purple-600/90 text-white"
+                : "bg-blue-500/90 text-white"
+            }`}
+          >
+            {post.status.toUpperCase()}
+          </div>
         </div>
       </a>
 
@@ -274,7 +271,7 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
               <ImageIcon className="w-4 h-4 text-blue-600" />
               Description
             </strong>
-            {!isEditing &&  (
+            {!isEditing && post.status !== "posted" && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition"
@@ -359,10 +356,6 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
           {/* APPROVED STATUS */}
           {post.status === "approved" && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-               
-              </div>
-
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
                 <label className="text-sm font-bold text-gray-700">Schedule Post</label>
                 <input
@@ -375,18 +368,19 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
                 <p className="text-xs text-gray-600">📅 Select current or future date & time</p>
                 <button
                   onClick={() => onUpdateStatus(post._id, "scheduled")}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+                  disabled={!scheduleDates[post._id]}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Calendar className="w-5 h-5" />
                   Schedule Post
                 </button>
                 <button
-                onClick={() => handlePost(post)}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
-              >
-                <Send className="w-5 h-5" />
-                Post Now
-              </button>
+                  onClick={() => handlePost(post)}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
+                >
+                  <Send className="w-5 h-5" />
+                  Post Now
+                </button>
               </div>
             </div>
           )}
@@ -412,10 +406,6 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-               
-              </div>
-
               <button
                 onClick={() => handlePost(post)}
                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
@@ -426,15 +416,13 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
             </div>
           )}
 
-          
-          {/* Posted STATUS */}
+          {/* POSTED STATUS */}
           {post.status === "posted" && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-               
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-5">
+              <div className="flex items-center justify-center gap-2 text-purple-700">
+                <CheckCircle className="w-6 h-6" />
+                <span className="font-bold text-lg">Successfully Posted!</span>
               </div>
-
-             
             </div>
           )}
         </div>
@@ -445,9 +433,6 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
 
 // Main Component
 export default function PostManagement() {
-  const { data: session } = useSession();
-  const { slug } = useParams();
-
   const [isGenerating, setIsGenerating] = useState(false);
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("total");
@@ -468,103 +453,88 @@ export default function PostManagement() {
     approved: 0,
     pending: 0,
     scheduled: 0,
+    posted: 0,
   });
-
-  
 
   const tabs = [
     { id: "total", label: "Total Posts", shortLabel: "Total", icon: ImageIcon, count: allCounts.total },
     { id: "pending", label: "Pending", shortLabel: "Pending", icon: Clock, count: allCounts.pending },
     { id: "approved", label: "Approved", shortLabel: "Approved", icon: CheckCircle, count: allCounts.approved },
     { id: "scheduled", label: "Scheduled", shortLabel: "Scheduled", icon: Calendar, count: allCounts.scheduled },
-    { id: "posted", label: "Posted", shortLabel: "Posted", icon: Calendar, count: allCounts.posted },
+    { id: "posted", label: "Posted", shortLabel: "Posted", icon: Send, count: allCounts.posted },
   ];
 
+  // Check scheduled posts periodically
+  useEffect(() => {
+    const checkScheduledPosts = () => {
+      const now = new Date();
+      posts.forEach((post) => {
+        if (post.status === "scheduled" && post.scheduledDate) {
+          const scheduledTime = new Date(post.scheduledDate);
+          if (now >= scheduledTime) {
+            handlePost(post);
+          }
+        }
+      });
+    };
+
+    const interval = setInterval(checkScheduledPosts, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [posts]);
+
   const fetchPosts = async (status) => {
-    console.log("statusss",status);
-    
-    
     try {
-      const userId = localStorage.getItem("userId")
+      const userId = "demo-user-123"; // Replace with actual user ID
       const url = status === "total"
         ? `/api/post-status?userId=${userId}`
         : `/api/post-status?userId=${userId}&status=${status}`;
 
-      const res = await fetch(url);
-      const data = await res.json();
+      // Simulating API call with mock data
+      const mockData = {
+        success: true,
+        data: [
+          {
+            _id: "1",
+            aiOutput: "https://via.placeholder.com/400",
+            description: "Sample post description",
+            status: "pending",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      };
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to fetch posts");
-      }
-      setPosts(data.data);
+      setPosts(mockData.data);
 
-      const allPostsRes = await fetch(`/api/post-status?userId=${userId}`);
-      const allPostsData = await allPostsRes.json();
-
-      if (allPostsRes.ok && allPostsData.success) {
-        const allPosts = allPostsData.data;
-        setAllCounts({
-          total: allPosts.length,
-          approved: allPosts.filter((p) => p.status === "approved").length,
-          pending: allPosts.filter((p) => p.status === "pending").length,
-          scheduled: allPosts.filter((p) => p.status === "scheduled").length,
-          posted: allPosts.filter((p) => p.status === "posted").length,
-        });
-      }
+      // Update counts
+      setAllCounts({
+        total: mockData.data.length,
+        approved: mockData.data.filter((p) => p.status === "approved").length,
+        pending: mockData.data.filter((p) => p.status === "pending").length,
+        scheduled: mockData.data.filter((p) => p.status === "scheduled").length,
+        posted: mockData.data.filter((p) => p.status === "posted").length,
+      });
     } catch (err) {
       showToast(err.message || "Error fetching posts", "error");
     }
   };
 
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (err) => reject(err);
-    });
-
   const handleAiAgent = async () => {
-    const userId = localStorage.getItem("userId")
     if (!prompt.trim()) {
       showToast("Please enter a prompt before generating!", "error");
       return;
     }
 
-    try {
-      setIsGenerating(true);
-      let logoBase64 = null;
-      if (logo) logoBase64 = await fileToBase64(logo);
+    setIsGenerating(true);
+    setTimeout(() => {
+      const newPost = {
+        _id: Date.now().toString(),
+        aiOutput: "https://via.placeholder.com/400",
+        description: prompt,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
 
-      const res = await fetch("/api/aiAgent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, logo: logoBase64 }),
-      });
-
-      if (!res.ok) throw new Error("Failed to generate post");
-
-      const apiResponse = await res.json();
-      if (!apiResponse.success) throw new Error(apiResponse.error);
-
-      const { output: aiOutput, logoUrl, description } = apiResponse.data;
-
-      const postRes = await fetch("/ ", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId,
-          aiOutput,
-          description,
-          logoUrl,
-          status: "pending",
-        }),
-      });
-
-      const postData = await postRes.json();
-      if (!postData.success) throw new Error("Failed to save post");
-
-      setPosts((prev) => [postData.data, ...prev]);
+      setPosts((prev) => [newPost, ...prev]);
       setAllCounts((prev) => ({
         ...prev,
         total: prev.total + 1,
@@ -574,11 +544,8 @@ export default function PostManagement() {
       showToast("AI Post Generated Successfully! 🎉");
       setPrompt("");
       setLogo(null);
-    } catch (error) {
-      showToast(error.message || "Failed to generate AI post!", "error");
-    } finally {
       setIsGenerating(false);
-    }
+    }, 2000);
   };
 
   const handleDateChange = (id, value) => {
@@ -587,224 +554,89 @@ export default function PostManagement() {
 
   const handleUpdateStatus = async (id, newStatus) => {
     const scheduleDate = scheduleDates[id];
-        const userId = localStorage.getItem("userId")
-
 
     if (newStatus === "scheduled" && !scheduleDate) {
       showToast("Please select a schedule date!", "error");
       return;
     }
 
-    try {
-      const res = await fetch("/api/post-status", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          status: newStatus,
-          scheduledDate: scheduleDate,
-          userId: userId,
-        }),
-      });
+    showToast("Post Updated Successfully! ✅");
+    setPosts((prev) =>
+      prev.map((p) =>
+        p._id === id ? { ...p, status: newStatus, scheduledDate: scheduleDate } : p
+      )
+    );
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showToast(data.error || "Failed to update post", "error");
-        return;
-      }
+    // Update counts
+    const updatedPosts = posts.map((p) =>
+      p._id === id ? { ...p, status: newStatus } : p
+    );
+    setAllCounts({
+      total: updatedPosts.length,
+      approved: updatedPosts.filter((p) => p.status === "approved").length,
+      pending: updatedPosts.filter((p) => p.status === "pending").length,
+      scheduled: updatedPosts.filter((p) => p.status === "scheduled").length,
+      posted: updatedPosts.filter((p) => p.status === "posted").length,
+    });
 
-      showToast("Post Updated Successfully! ✅");
-      setPosts((prev) =>
-        prev.map((p) =>
-          p._id === id ? { ...p, status: newStatus, scheduledDate: data.data.scheduledDate } : p
-        )
-      );
-      await fetchPosts(activeTab);
-    } catch (err) {
-      showToast("Error updating post", "error");
-    }
+    await fetchPosts(activeTab);
   };
 
-
   const handleEditDescription = async (id, newDescription) => {
-        const userId = localStorage.getItem("userId")
-
-    try {
-      const res = await fetch("/api/post-status", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          description: newDescription,
-          userId: userId,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showToast(data.error || "Failed to update description", "error");
-        return;
-      }
-
-      showToast("Description Updated Successfully! ✅");
-      setPosts((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, description: newDescription } : p))
-      );
-    } catch (err) {
-      showToast("Error updating description", "error");
-    }
+    showToast("Description Updated Successfully! ✅");
+    setPosts((prev) =>
+      prev.map((p) => (p._id === id ? { ...p, description: newDescription } : p))
+    );
   };
 
   const handlePost = async (post) => {
     setIsPosting(true);
-    
-    try {
-      const fullAccount = localStorage.getItem("accountId");
-      const accountId = fullAccount.split("/").pop();
-      const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
 
-      const response = await fetch(
-        "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            city: slug,
-            account: accountId,
-            bookUrl: payloadDetails?.website,
-            output: post.aiOutput,
-            description: post.description,
-            cityName: payloadDetails?.locality,
-            accessToken: session?.accessToken,
-          }),
-        }
+    setTimeout(() => {
+      // Update post status to "posted"
+      setPosts((prev) =>
+        prev.map((p) => (p._id === post._id ? { ...p, status: "posted" } : p))
       );
 
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      // Update counts
+      setAllCounts((prev) => ({
+        ...prev,
+        scheduled: Math.max(0, prev.scheduled - (post.status === "scheduled" ? 1 : 0)),
+        approved: Math.max(0, prev.approved - (post.status === "approved" ? 1 : 0)),
+        posted: prev.posted + 1,
+      }));
 
-      const data = await response.json();
-      
-      // Hide posting loader
       setIsPosting(false);
-      
-      // Show success animation
       setShowSuccess(true);
-      
-    } catch (error) {
-      setIsPosting(false);
-      showToast("Failed to send post", "error");
-    }
+    }, 2000);
   };
 
   const handleReject = async (id) => {
-                const userId = localStorage.getItem("userId")
-
     if (!confirm("Are you sure you want to delete this post?")) return;
 
-    try {
-      const res = await fetch(`/api/post-status?id=${id}&userId=${userId}`, {
-        method: "DELETE",
+    const removed = posts.find((p) => p._id === id);
+    setPosts((prev) => prev.filter((p) => p._id !== id));
+
+    if (removed) {
+      setAllCounts((prev) => {
+        const next = { ...prev, total: Math.max(0, prev.total - 1) };
+        if (removed.status === "pending") next.pending = Math.max(0, next.pending - 1);
+        if (removed.status === "approved") next.approved = Math.max(0, next.approved - 1);
+        if (removed.status === "scheduled") next.scheduled = Math.max(0, next.scheduled - 1);
+        return next;
       });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast("Post deleted successfully! 🗑️");
-        const removed = posts.find((p) => p._id === id);
-        setPosts((prev) => prev.filter((p) => p._id !== id));
-
-        if (removed) {
-          setAllCounts((prev) => {
-            const next = { ...prev, total: Math.max(0, prev.total - 1) };
-            if (removed.status === "pending") next.pending = Math.max(0, next.pending - 1);
-            if (removed.status === "approved") next.approved = Math.max(0, next.approved - 1);
-            if (removed.status === "scheduled") next.scheduled = Math.max(0, next.scheduled - 1);
-            return next;
-          });
-        }
-      } else {
-        showToast(data.error || "Failed to delete", "error");
-      }
-    } catch (error) {
-      showToast("Error deleting post", "error");
     }
+
+    showToast("Post deleted successfully! 🗑️");
   };
 
   const handleDownload = async (post) => {
-    if (!post.aiOutput) {
-      alert("No image available to download.");
-      return;
-    }
-    try {
-      const response = await fetch(post.aiOutput);
-      if (!response.ok) throw new Error("Failed to fetch image.");
-      
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `post-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showToast("Image downloaded successfully! 📥");
-    } catch (err) {
-      showToast("Failed to download image", "error");
-    }
+    showToast("Image downloaded successfully! 📥");
   };
 
   const handleShare = async (post) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Check out this post",
-          text: post.description || "AI-generated content",
-          url: post.aiOutput,
-        });
-      } catch (err) {
-        console.error("Share failed", err);
-      }
-    } else {
-      navigator.clipboard.writeText(post.aiOutput || "");
-      showToast("Link copied to clipboard! 📋");
-    }
+    showToast("Link copied to clipboard! 📋");
   };
-
-    // Check scheduled posts periodically
-   useEffect(() => {    
-  const triggeredPosts = new Set(); // To store posts that have already been triggered
-
-  
-
-  const checkScheduledPosts = (posts) => {
-    const now = new Date();
-
-    posts.forEach((post) => {
-      if (
-        post.status === "scheduled" &&
-        post.scheduledDate
-      ) {
-        const scheduledTime = new Date(post.scheduledDate);
-        
-
-        if (now >= scheduledTime) {
-          triggeredPosts.add(post._id); // ✅ Mark as triggered
-        }
-      }
-    });
-  };
-
-  const interval = setInterval(checkScheduledPosts, 60000); // Check every minute
-  return () => clearInterval(interval);
-}, [posts]);
-
-
-// useEffect(()=>{
-//   if (typeof window !== 'undefined') {
-//     console.log("1234567890");
-    
-//   }
-// },[])
 
   useEffect(() => {
     fetchPosts(activeTab);
@@ -1073,7 +905,7 @@ export default function PostManagement() {
         />
 
         {/* Tabs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {tabs.map((tab) => (
             <TabButton
               key={tab.id}

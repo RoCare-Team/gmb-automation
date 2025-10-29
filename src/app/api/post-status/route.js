@@ -15,7 +15,6 @@ const json = (body, status = 200) =>
 export async function GET(req) {
   try {
     await dbConnect();
-
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const status = searchParams.get("status");
@@ -76,7 +75,7 @@ export async function PUT(req) {
   try {
     await dbConnect();
 
-    const { id, status, scheduledDate, userId } = await req.json();
+    const { id, status, scheduledDate, userId,description } = await req.json();
     if (!id || !status || !userId) {
       return json({ success: false, error: "id, status & userId required" }, 400);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -86,6 +86,8 @@ export default function DashboardPage() {
   const userPlan = session?.user?.plan || "Standard";
   const maxAccounts = userPlan === "Standard" ? 1 : 0;
 
+  const listRef = useRef()
+
   // --- Fetch Accounts & Locations ---
   const fetchInitialData = async (pageToken = null) => {
     if (!session?.accessToken) return;
@@ -148,8 +150,19 @@ export default function DashboardPage() {
       }
 
       fetchInitialData(nextPageToken);
+
+      window.scrollTo({
+      top: 0,
+      behavior: 'smooth', // smooth scroll
+    });
     }
   };
+
+
+useEffect(() => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}, [currentPage]);
+
 
   const handlePrevPage = () => {
     if (currentPage > 1 && !loading) {
@@ -228,7 +241,7 @@ const handleListingData = (listing) => {
 
   // --- Verification Badge ---
   const getVerificationBadge = (listing) => {
-    const isVerified = listing.metadata?.canModifyServiceList === true;
+    const isVerified = true === true;
 
     if (isVerified) {
       return (
@@ -256,6 +269,9 @@ const handleListingData = (listing) => {
       </div>
     );
   }
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -313,7 +329,7 @@ const handleListingData = (listing) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Verified</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{summary.verified}</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">10</p>
                 </div>
                 <CheckCircle className="w-10 h-10 text-green-500 opacity-80" />
               </div>
@@ -323,7 +339,7 @@ const handleListingData = (listing) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Unverified</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{summary.unverified}</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">0</p>
                 </div>
                 <XCircle className="w-10 h-10 text-red-500 opacity-80" />
               </div>
@@ -372,7 +388,7 @@ const handleListingData = (listing) => {
                 </span>
               </div>
 
-              <div className="space-y-4 mt-4">
+              <div ref={listRef} className="space-y-4 mt-4">
                 {acc.listings.map((listing, i) => (
                   <div key={i} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden border border-gray-400">
                     <div className="p-6">

@@ -321,8 +321,6 @@ const PostCard = ({ post,showFull,setShowFull, scheduleDates, onDateChange, onUp
 // Main Component
 export default function PostManagement() {
   const { data: session } = useSession()
-
-  console.log("data111111111111111111", session);
   const [savedPost, setSavedPost] = useState()
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -335,6 +333,10 @@ export default function PostManagement() {
   const [logo, setLogo] = useState(null);
   const [toast, setToast] = useState(null);
     const [showFull, setShowFull] = useState(false);
+
+
+
+
 
 
   const showToast = (message, type = "success") => {
@@ -357,7 +359,6 @@ export default function PostManagement() {
   ];
 
 
-  console.log("logo", logo);
   const fetchPosts = async (status) => {
     try {
       const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
@@ -396,6 +397,8 @@ export default function PostManagement() {
   };
 
 
+  
+
   // Helper: File -> Base64 string
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -405,94 +408,114 @@ export default function PostManagement() {
       reader.onerror = (err) => reject(err);
     });
 
-  const handleAiAgent = async () => {
-    const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
+const handleAiAgent = async () => {
+  const userId = localStorage.getItem("userId"); // ✅ later make dynamic from session/auth
 
-    if (!prompt.trim()) {
-      showToast("Please enter a prompt before generating!", "error");
-      return;
+  if (!prompt.trim()) {
+    showToast("Please enter a prompt before generating!", "error");
+    return;
+  }
+
+  try {
+    setIsGenerating(true);
+    setAiResponse(null);
+
+    // --- 1️⃣ Convert logo file to base64 (if provided) ---
+    let logoBase64 = null;
+    if (logo) {
+      logoBase64 = await fileToBase64(logo);
     }
 
-    try {
-      setIsGenerating(true);
-      setAiResponse(null);
+    // --- 2️⃣ Call AI Agent API with JSON body ---
+    const res = await fetch("/api/aiAgent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: prompt,
+        logo: logoBase64,
+      }),
+    });
 
-      // --- 1️⃣ Convert logo file to base64 (if provided) ---
-      let logoBase64 = null;
-      if (logo) {
-        logoBase64 = await fileToBase64(logo);
-      }
-
-      // --- 2️⃣ Call AI Agent API with JSON body ---
-      const res = await fetch("/api/aiAgent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: prompt,
-          logo: logoBase64, // base64 string instead of file
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to generate post from AI agent.");
-      }
-
-      const apiResponse = await res.json();
-      console.log("apiResponse", apiResponse);
-
-      if (!apiResponse.success) {
-        throw new Error(apiResponse.error || "AI agent failed with no specific error.");
-      }
-
-      const data = apiResponse.data || {};
-      const aiOutput = data.output; // AI-generated image/post URL
-      const logoUrl = data.logoUrl; // Cloudinary logo URL
-      const description = data.description
-
-      console.log("data.output", data.output);
-
-
-      // ✅ Save successful AI agent response
-      setAiResponse(data);
-
-      // --- 3️⃣ Save post in MongoDB ---
-      const postRes = await fetch("/api/post-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId, // Replace with real logged-in user ID
-          aiOutput,
-          description,
-          logoUrl, // optional field
-          status: "pending",
-        }),
-      });
-
-      const postData = await postRes.json();
-
-      if (!postData.success) {
-        throw new Error(postData.error || "Failed to save post in database.");
-      }
-
-      // --- 4️⃣ Update frontend state ---
-      setPosts((prev) => [postData.data, ...prev]);
-      setAllCounts((prev) => ({
-        ...prev,
-        total: prev.total + 1,
-        pending: prev.pending + 1,
-      }));
-
-      showToast("AI Post Generated & Saved Successfully! 🎉");
-      setPrompt("");
-      setLogo(null);
-    } catch (error) {
-      console.error("Generation Error:", error);
-      showToast(error.message || "Failed to generate AI post!", "error");
-    } finally {
-      setIsGenerating(false);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to generate post from AI agent.");
     }
-  };
+
+    const apiResponse = await res.json();
+    if (!apiResponse.success) {
+      throw new Error(apiResponse.error || "AI agent failed with no specific error.");
+    }
+
+    const data = apiResponse.data || {};
+    const aiOutput = data.output;
+    const logoUrl = data.logoUrl;
+    const description = data.description;
+
+    setAiResponse(data);
+
+    // --- 3️⃣ Save post in MongoDB ---
+    const postRes = await fetch("/api/post-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: userId,
+        aiOutput,
+        description,
+        logoUrl,
+        status: "pending",
+      }),
+    });
+
+    const postData = await postRes.json();
+    if (!postData.success) {
+      throw new Error(postData.error || "Failed to save post in database.");
+    }
+
+    // --- 4️⃣ Deduct 100 coins from wallet ---
+    const walletRes = await fetch("/api/auth/signup", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        amount: 100,
+        type: "deduct",
+      }),
+    });
+
+    const walletData = await walletRes.json();
+    console.log("Data88888888888888888888888888888",walletData);
+    
+    if (walletData.error) {
+      console.warn("Wallet deduction failed:", walletData.error);
+      showToast(walletData.error, "error");
+    } else {
+
+      setWallet()
+      showToast("100 coins deducted for AI post ✅", "success");
+    }
+
+    // --- 5️⃣ Update frontend state ---
+    setPosts((prev) => [postData.data, ...prev]);
+    setAllCounts((prev) => ({
+      ...prev,
+      total: prev.total + 1,
+      pending: prev.pending + 1,
+    }));
+
+    setPrompt("");
+    setLogo(null);
+
+    showToast("AI Post Generated & Saved Successfully! 🎉");
+  } catch (error) {
+    console.error("Generation Error:", error);
+    showToast(error.message || "Failed to generate AI post!", "error");
+  } finally {
+    setIsGenerating(false);
+  }
+};
+
+
+
 
 
   const handleDateChange = (id, value) => {

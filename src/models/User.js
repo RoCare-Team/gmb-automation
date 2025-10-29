@@ -3,16 +3,20 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     userId: { type: String, unique: true, required: true },
-        fullName: { type: String, required: true },
-    email: { type: String, unique: true, required: true },
-    passwordHash: { type: String, required: true },
+    fullName: { type: String },
+    email: { type: String },
+    phone: { type: String, unique: true }, // removed `required: true`
+
+    wallet: { type: Number, default: 0 },
+
     subscription: {
-       plan: { type: String },
+      plan: { type: String },
       paymentId: { type: String },
       orderId: { type: String },
       date: { type: Date },
+      expiry: { type: Date },
       status: { type: String, enum: ["active", "inactive"], default: "inactive" },
-      maxAccounts: Number, // control how many Google accounts can be linked
+      maxAccounts: { type: Number, default: 0 },
       accounts: [
         {
           googleId: String,
@@ -21,6 +25,10 @@ const userSchema = new mongoose.Schema(
         },
       ],
     },
+
+    // Store OTP temporarily for verification
+    otp: { type: String },
+    otpExpiresAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -51,7 +51,6 @@ export async function POST(req) {
       }
     );
 
-    console.log("newPayload",newPayload);
     
 
     const data  = await response.json()

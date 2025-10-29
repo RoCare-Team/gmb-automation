@@ -42,12 +42,16 @@ export async function POST(req) {
     }
 
     // ✅ Update subscription
+
+     const purchaseDate = new Date();
+    const expiryDate = new Date(purchaseDate);
+    expiryDate.setMonth(expiryDate.getMonth() + 3); 
     user.subscription = {
       plan,
       paymentId: razorpay_payment_id,
       orderId: razorpay_order_id,
-      date: new Date(),
-      status: "active",
+date: purchaseDate,
+      expiry: expiryDate,      status: "active",
     };
     await user.save();
 
