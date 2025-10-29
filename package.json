@@ -34,7 +34,6 @@
     "react-lazy-load-image-component": "^1.6.3",
     "recharts": "^3.3.0",
     "styled-components": "^6.1.19",
-    "undefined": "expo-auth-session\\"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
