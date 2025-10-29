@@ -1,8 +1,7 @@
-// src/middleware.js
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET || "mannubhai_secret";
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
@@ -12,28 +11,25 @@ export async function middleware(req) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/api/public") ||
-    pathname.startsWith("/subscription") // 🔓 subscription page हमेशा matcher से बाहर
+    pathname.startsWith("/otp") || // OTP route allow
+    pathname.startsWith("/subscription") // subscription page allow
   ) {
     return NextResponse.next();
   }
 
-  // ✅ Token from header or cookie
+  // ✅ Get token (Authorization: Bearer <token>)
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.split(" ")[1];
-
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+  if (!token) return NextResponse.redirect(new URL("/login", req.url));
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    const sub = decoded.subscription;
     const hasActiveSubscription =
-      decoded.subscription &&
-      decoded.subscription.status === "active" &&
-      new Date(decoded.subscription.endDate) > new Date();
+      sub && sub.status === "active" && sub.endDate && new Date(sub.endDate) > new Date();
 
-    // 🚫 If user NOT paid → block ALL protected routes (dashboard, settings, profile etc.)
+    // 🚫 Not paid → force subscription page
     if (!hasActiveSubscription) {
       return NextResponse.redirect(new URL("/subscription", req.url));
     }
@@ -46,9 +42,5 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/settings/:path*",
-    "/profile/:path*"
-  ],
+  matcher: ["/dashboard/:path*", "/settings/:path*", "/profile/:path*"],
 };

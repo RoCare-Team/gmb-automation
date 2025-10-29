@@ -34,6 +34,8 @@ export async function POST(req) {
 
     // 🔹 Query using custom userId field
     const user = await User.findOne({ userId }); // <--- use userId, not _id
+    console.log("user",user);
+    
     if (!user) {
       return new Response(
         JSON.stringify({ success: false, error: "User not found" }),
@@ -50,7 +52,7 @@ export async function POST(req) {
       plan,
       paymentId: razorpay_payment_id,
       orderId: razorpay_order_id,
-date: purchaseDate,
+     date: purchaseDate,
       expiry: expiryDate,      status: "active",
     };
     await user.save();

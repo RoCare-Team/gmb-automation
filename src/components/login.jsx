@@ -88,6 +88,7 @@ export default function LoginPage() {
         // Existing user - login successful
         localStorage.setItem("token", data.token);
         localStorage.setItem("userId", data.user.userId);
+        localStorage.setItem("fullName", data.user.fullName);
         showMessage("Login successful! Redirecting...", "success");
         router.push("/subscription")
       } else {

@@ -75,24 +75,36 @@ export async function POST(req) {
         email,
         phone,
         wallet: 0,
-        subscription: { status: "inactive" },
+        subscription: {
+          status: "inactive",
+          plan: "Free",
+          startDate: null,
+          endDate: null,
+        },
       });
     }
 
     await OTP.deleteOne({ phone });
 
-    // ✅ Generate JWT
+    // ✅ Generate JWT (include subscription in payload)
     const token = jwt.sign(
-      { id: user._id, userId: user.userId, fullName: user.fullName, phone: user.phone },
+      {
+        id: user._id,
+        userId: user.userId,
+        fullName: user.fullName,
+        phone: user.phone,
+        subscription: user.subscription, // 🔥 add subscription in token
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // ✅ Return token + user
     return NextResponse.json({
       message: "Login successful",
       token,
       user,
-      redirectTo: "/subscription", // redirect target
+      redirectTo: user.subscription.status === "active" ? "/dashboard" : "/subscription",
     });
   } catch (err) {
     console.error("OTP API Error:", err);
