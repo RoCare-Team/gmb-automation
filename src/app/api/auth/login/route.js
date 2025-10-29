@@ -74,7 +74,7 @@ export async function POST(req) {
         fullName: name,
         email,
         phone,
-        wallet: 0,
+        wallet: 1000,
         subscription: {
           status: "inactive",
           plan: "Free",

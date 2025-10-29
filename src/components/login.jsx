@@ -90,7 +90,12 @@ export default function LoginPage() {
         localStorage.setItem("userId", data.user.userId);
         localStorage.setItem("fullName", data.user.fullName);
         showMessage("Login successful! Redirecting...", "success");
-        router.push("/subscription")
+       if(data.token){
+         router.push("/dashboard")
+       }
+       else {
+        router.push("/login")
+       }
       } else {
         showMessage(data.error || "Invalid OTP", "error");
       }
@@ -128,7 +133,12 @@ export default function LoginPage() {
                 localStorage.setItem("userId", data.user.userId);
 
         showMessage("Registration complete! Redirecting...", "success");
-        router.push("/subscription")
+        if(data.token){
+         router.push("/dashboard")
+       }
+       else {
+        router.push("/login")
+       }
       } else {
         showMessage(data.error || "Registration failed", "error");
       }
