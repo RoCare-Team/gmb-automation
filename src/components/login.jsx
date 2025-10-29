@@ -88,9 +88,7 @@ export default function LoginPage() {
         // Existing user - login successful
         localStorage.setItem("token", data.token);
         showMessage("Login successful! Redirecting...", "success");
-        setTimeout(() => {
-          window.location.href = "/subscription";
-        }, 1000);
+        router.push("/subscription")
       } else {
         showMessage(data.error || "Invalid OTP", "error");
       }
@@ -126,9 +124,7 @@ export default function LoginPage() {
       if (res.ok && data.token) {
         localStorage.setItem("token", data.token);
         showMessage("Registration complete! Redirecting...", "success");
-        setTimeout(() => {
-          window.location.href = "/subscription";
-        }, 1000);
+        router.push("/subscription")
       } else {
         showMessage(data.error || "Registration failed", "error");
       }
