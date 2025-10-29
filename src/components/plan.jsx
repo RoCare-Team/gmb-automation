@@ -15,6 +15,7 @@ export default function Plan({ user }) {
       name: "Basic Plan",
       monthlyPrice: 999,
       description: "Perfect for small businesses starting with automation.",
+      
       features: [
         "Smart-generated GMB posts",
         "Auto post publishing on Google My Business",
