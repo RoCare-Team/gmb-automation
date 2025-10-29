@@ -86,7 +86,14 @@ export default function LoginPage() {
       } else if (res.ok) {
         localStorage.setItem("token", data.token);
         showMessage("Login successful! Redirecting...", "success");
-        setTimeout(() => router.push(data.redirectTo || "/subscription"), 1000);
+setTimeout(() => {
+  const redirectPath = data.redirectTo || "/subscription";
+  if (typeof window !== "undefined") {
+    window.location.href = redirectPath; // full reload (works on Vercel)
+  } else {
+    router.push(redirectPath);
+  }
+}, 1000);
       } else {
         showMessage(data.error || "Invalid OTP", "error");
       }
@@ -119,10 +126,20 @@ export default function LoginPage() {
       });
       const data = await res.json();
 
+      console.log("datadata",data);
+      
+
       if (res.ok) {
         localStorage.setItem("token", data.token);
         showMessage("Registration complete! Redirecting...", "success");
-        setTimeout(() => router.push(data.redirectTo || "/subscription"), 1000);
+setTimeout(() => {
+  const redirectPath = data.redirectTo || "/subscription";
+  if (typeof window !== "undefined") {
+    window.location.href = redirectPath; // full reload (works on Vercel)
+  } else {
+    router.push(redirectPath);
+  }
+}, 1000);
       } else {
         showMessage(data.error || "Registration failed", "error");
       }
