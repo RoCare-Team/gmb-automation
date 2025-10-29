@@ -1,47 +1,59 @@
 // src/middleware.js
-import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
 
 export async function middleware(req) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  console.log("tokentokentoken",token);
-  
   const { pathname } = req.nextUrl;
 
-  // ✅ Public routes that don't require auth
+  // ✅ Public routes
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/api")
+    pathname.startsWith("/api/public")
   ) {
     return NextResponse.next();
   }
 
-  // 🔒 If user not logged in → redirect to login
+  // ✅ Token from header or cookie
+  const authHeader = req.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
+
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // 🧠 Extract subscription info from token
-  const hasActiveSubscription =
-    token.subscription &&
-    token.subscription.status === "active" &&
-    token.subscription.plan;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-  // 🚫 If no active subscription → block dashboard access
-  if (pathname.startsWith("/dashboard") && !hasActiveSubscription) {
-    return NextResponse.redirect(new URL("/subscription", req.url));
+    const hasActiveSubscription =
+      decoded.subscription &&
+      decoded.subscription.status === "active" &&
+      new Date(decoded.subscription.endDate) > new Date();
+
+    // 🚫 If user NOT paid → block ALL protected routes except /subscription
+    if (!hasActiveSubscription && !pathname.startsWith("/subscription")) {
+      return NextResponse.redirect(new URL("/subscription", req.url));
+    }
+
+    // ✅ If already paid and tries to visit /subscription → redirect to /dashboard
+    if (hasActiveSubscription && pathname.startsWith("/subscription")) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    return NextResponse.next();
+  } catch (err) {
+    console.error("JWT Error:", err);
+    return NextResponse.redirect(new URL("/login", req.url));
   }
-
-  // ✅ If user already subscribed and tries to go to /subscription, send to /dashboard
-  if (pathname.startsWith("/subscription") && hasActiveSubscription) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // ✅ Otherwise allow
-  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/subscription/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/subscription/:path*",
+    "/settings/:path*",   // ✅ protect more routes if needed
+    "/profile/:path*"
+  ],
 };
