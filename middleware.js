@@ -6,20 +6,19 @@ const JWT_SECRET = process.env.JWT_SECRET || "mannubhai_secret";
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  // ✅ Public routes
+  // ✅ Public routes (allowed without login)
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/api/public") ||
-    pathname.startsWith("/otp") || // OTP route allow
+    pathname.startsWith("/otp") || // OTP API allow
     pathname.startsWith("/subscription") // subscription page allow
   ) {
     return NextResponse.next();
   }
 
-  // ✅ Get token (Authorization: Bearer <token>)
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.split(" ")[1];
+  // ✅ Get token from HttpOnly cookie
+  const token = req.cookies.get("token")?.value;
   if (!token) return NextResponse.redirect(new URL("/login", req.url));
 
   try {
