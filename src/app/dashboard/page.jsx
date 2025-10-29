@@ -269,6 +269,7 @@ const handleListingData = (listing) => {
       </div>
     );
   }
+  
 
 
 
