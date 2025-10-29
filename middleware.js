@@ -11,7 +11,8 @@ export async function middleware(req) {
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/api/public")
+    pathname.startsWith("/api/public") ||
+    pathname.startsWith("/subscription") // 🔓 subscription page हमेशा matcher से बाहर
   ) {
     return NextResponse.next();
   }
@@ -32,14 +33,9 @@ export async function middleware(req) {
       decoded.subscription.status === "active" &&
       new Date(decoded.subscription.endDate) > new Date();
 
-    // 🚫 If user NOT paid → block ALL protected routes except /subscription
-    if (!hasActiveSubscription && !pathname.startsWith("/subscription")) {
+    // 🚫 If user NOT paid → block ALL protected routes (dashboard, settings, profile etc.)
+    if (!hasActiveSubscription) {
       return NextResponse.redirect(new URL("/subscription", req.url));
-    }
-
-    // ✅ If already paid and tries to visit /subscription → redirect to /dashboard
-    if (hasActiveSubscription && pathname.startsWith("/subscription")) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     return NextResponse.next();
@@ -52,8 +48,7 @@ export async function middleware(req) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/subscription/:path*",
-    "/settings/:path*",   // ✅ protect more routes if needed
+    "/settings/:path*",
     "/profile/:path*"
   ],
 };

@@ -21,8 +21,8 @@ export default function Plan({ user }) {
         "Auto post publishing on Google My Business",
         "No auto review reply",
         "No service list automation",
-        "1000 Credits Included/month",
-        
+        "1000 Credits Included /month",
+
       ],
       goal: "Keep your GMB active with regular smart-generated posts automatically published.",
     },
@@ -35,7 +35,7 @@ export default function Plan({ user }) {
         "Auto post publishing on Google My Business",
         "Unlimited Smart Auto Review Replies",
         "No service list automation",
-        "1500 Credits Included/month",
+        "1500 Credits Included /month",
       ],
       highlight: true,
       goal: "Automate posting and customer review replies to boost engagement and reputation.",
@@ -49,7 +49,7 @@ export default function Plan({ user }) {
         "Auto post publishing on Google My Business",
         "Unlimited Smart Auto Review Replies",
         "Auto service list management (add/update services automatically)",
-        "3000 Credits Included/month",
+        "3000 Credits Included /month",
       ],
       goal: "Fully automate your GMB — from smart post creation to review replies and service management.",
     },
