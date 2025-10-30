@@ -18,9 +18,6 @@ import {
   EyeOff,
   Send,
 } from "lucide-react";
-import LabelImportantIcon from '@mui/icons-material/LabelImportant';
-import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 
 // Toast Component
 const Toast = ({ message, type = "success" }) => (
@@ -31,8 +28,70 @@ const Toast = ({ message, type = "success" }) => (
   </div>
 );
 
-// Loading Overlay Component
-const LoadingOverlay = () => (
+// Insufficient Balance Modal
+const InsufficientBalanceModal = ({ onClose, onRecharge, walletBalance }) => (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border-4 border-red-200 animate-scale-in">
+      <div className="text-center space-y-6">
+        <div className="text-7xl">💸</div>
+        <h3 className="text-3xl font-black text-gray-900">Insufficient Balance!</h3>
+        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
+          <p className="text-red-800 font-semibold">Current Balance: ₹{walletBalance}</p>
+          <p className="text-red-600 text-sm mt-1">Required: 350 Coins per AI post</p>
+        </div>
+        <p className="text-gray-600">Please recharge your wallet to continue generating AI posts</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onRecharge}
+            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+          >
+            Recharge Wallet
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Upgrade Plan Modal
+const UpgradePlanModal = ({ onClose, onUpgrade }) => (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border-4 border-amber-200 animate-scale-in">
+      <div className="text-center space-y-6">
+        <div className="text-7xl">🔒</div>
+        <h3 className="text-3xl font-black text-gray-900">Upgrade Required!</h3>
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
+          <p className="text-amber-800 font-semibold">Free Plan Active</p>
+          <p className="text-amber-600 text-sm mt-1">Upgrade to generate AI posts</p>
+        </div>
+        <p className="text-gray-600">Unlock unlimited AI-powered post generation with our premium plans</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onUpgrade}
+            className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+          >
+            View Plans
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Loading Overlay Component with Timer
+const LoadingOverlay = ({ countdown }) => (
   <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
     <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-10 flex flex-col items-center space-y-6 max-w-md w-full border-4 border-white/30">
       <div className="relative">
@@ -43,6 +102,12 @@ const LoadingOverlay = () => (
       <div className="text-center space-y-3">
         <h3 className="text-3xl font-black text-white">Creating Magic ✨</h3>
         <p className="text-blue-100 text-sm">AI is generating your stunning post...</p>
+        {countdown > 0 && (
+          <div className="mt-4">
+            <div className="text-6xl font-black text-white animate-pulse">{countdown}</div>
+            <p className="text-blue-100 text-xs mt-2">seconds remaining</p>
+          </div>
+        )}
       </div>
       <div className="w-full bg-white/30 rounded-full h-2.5 overflow-hidden">
         <div className="bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 h-full rounded-full animate-shimmer"></div>
@@ -63,7 +128,6 @@ const SuccessOverlay = ({ onComplete }) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4">
       <div className="relative flex flex-col items-center">
-        {/* Confetti Background */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="confetti"></div>
           <div className="confetti"></div>
@@ -73,9 +137,7 @@ const SuccessOverlay = ({ onComplete }) => {
           <div className="confetti"></div>
         </div>
 
-        {/* Main Success Card */}
         <div className="relative bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 rounded-3xl shadow-2xl p-12 flex flex-col items-center space-y-6 max-w-lg w-full border-4 border-white animate-scale-in">
-          {/* Rocket Animation */}
           <div className="relative">
             <div className="absolute inset-0 bg-yellow-300/50 rounded-full blur-3xl animate-pulse-slow"></div>
             <div className="text-9xl animate-rocket relative z-10">🚀</div>
@@ -88,7 +150,6 @@ const SuccessOverlay = ({ onComplete }) => {
             </div>
           </div>
 
-          {/* Success Content */}
           <div className="text-center space-y-4 relative z-10">
             <div className="flex items-center justify-center gap-3">
               <CheckCircle className="w-16 h-16 text-white animate-check" />
@@ -101,12 +162,10 @@ const SuccessOverlay = ({ onComplete }) => {
             </p>
           </div>
 
-          {/* Progress Bar */}
           <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden relative">
             <div className="bg-white h-full rounded-full animate-progress-bar shadow-lg"></div>
           </div>
 
-          {/* Stars Animation */}
           <div className="flex gap-2 animate-stars">
             <Sparkles className="w-8 h-8 text-yellow-300" />
             <Sparkles className="w-10 h-10 text-yellow-200" />
@@ -125,7 +184,6 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
   return (
     <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-200 p-6 md:p-8">
       <div className="flex flex-col space-y-6">
-        {/* Prompt Input */}
         <div className="space-y-3">
           <label className="text-lg font-bold text-gray-800 flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-amber-500" />
@@ -140,7 +198,6 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
           />
         </div>
 
-        {/* Logo Upload */}
         <div className="space-y-3">
           <label className="text-lg font-bold text-gray-800 flex items-center gap-2">
             <Upload className="w-6 h-6 text-blue-500" />
@@ -179,7 +236,6 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
           )}
         </div>
 
-        {/* Generate Button */}
         <button
           onClick={onGenerate}
           disabled={loading || !prompt.trim()}
@@ -189,7 +245,6 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
           Generate Post with AI
         </button>
 
-        {/* Tip */}
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4">
           <p className="text-sm text-amber-900 flex items-start gap-2">
             <span className="text-xl">💡</span>
@@ -242,7 +297,6 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all">
-      {/* Image Section */}
       <a href={post.aiOutput} target="_blank" rel="noopener noreferrer">
         <div className="relative group">
           <img
@@ -251,30 +305,29 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
             className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity"
           />
           <div
-  className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
-    post.status === "pending"
-      ? "bg-yellow-500/90 text-white"
-      : post.status === "approved"
-      ? "bg-green-500/90 text-white"
-      : post.status === "posted"
-      ? "bg-purple-600/90 text-white"
-      : "bg-blue-500/90 text-white"
-  }`}
->
-  {post.status.toUpperCase()}
-</div>
+            className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
+              post.status === "pending"
+                ? "bg-yellow-500/90 text-white"
+                : post.status === "approved"
+                ? "bg-green-500/90 text-white"
+                : post.status === "posted"
+                ? "bg-purple-600/90 text-white"
+                : "bg-blue-500/90 text-white"
+            }`}
+          >
+            {post.status.toUpperCase()}
+          </div>
         </div>
       </a>
 
       <div className="p-6 space-y-5">
-        {/* Description Section */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <strong className="text-gray-900 font-bold flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-blue-600" />
               Description
             </strong>
-            {!isEditing &&  (
+            {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition"
@@ -328,15 +381,12 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
           )}
         </div>
 
-        {/* Date */}
         <p className="text-xs text-gray-500 flex items-center gap-1 pt-2 border-t border-gray-100">
           <Calendar className="w-3 h-3" />
           Created: {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "N/A"}
         </p>
 
-        {/* Action Buttons Based on Status */}
         <div className="pt-3 space-y-3">
-          {/* PENDING STATUS */}
           {post.status === "pending" && (
             <div className="flex flex-col sm:flex-row gap-3">
               <button
@@ -356,13 +406,8 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
             </div>
           )}
 
-          {/* APPROVED STATUS */}
           {post.status === "approved" && (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-               
-              </div>
-
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
                 <label className="text-sm font-bold text-gray-700">Schedule Post</label>
                 <input
@@ -381,17 +426,16 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
                   Schedule Post
                 </button>
                 <button
-                onClick={() => handlePost(post)}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
-              >
-                <Send className="w-5 h-5" />
-                Post Now
-              </button>
+                  onClick={() => handlePost(post)}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
+                >
+                  <Send className="w-5 h-5" />
+                  Post Now
+                </button>
               </div>
             </div>
           )}
 
-          {/* SCHEDULED STATUS */}
           {post.status === "scheduled" && (
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-5 space-y-4">
               <div className="bg-white rounded-lg p-3 border border-blue-200">
@@ -412,10 +456,6 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-               
-              </div>
-
               <button
                 onClick={() => handlePost(post)}
                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
@@ -423,18 +463,6 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
                 <Send className="w-5 h-5" />
                 Post Now
               </button>
-            </div>
-          )}
-
-          
-          {/* Posted STATUS */}
-          {post.status === "posted" && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-               
-              </div>
-
-             
             </div>
           )}
         </div>
@@ -445,10 +473,13 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
 
 // Main Component
 export default function PostManagement() {
-  const { data: session } = useSession();
-  const { slug } = useParams();
-
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiResponse, setAiResponse] = useState(null);
+  const [countdown, setCountdown] = useState(0);
+  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
+  const [showUpgradePlan, setShowUpgradePlan] = useState(false);
+  const [userWallet, setUserWallet] = useState(0);
+
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("total");
   const [prompt, setPrompt] = useState("");
@@ -468,9 +499,8 @@ export default function PostManagement() {
     approved: 0,
     pending: 0,
     scheduled: 0,
+    posted: 0,
   });
-
-  
 
   const tabs = [
     { id: "total", label: "Total Posts", shortLabel: "Total", icon: ImageIcon, count: allCounts.total },
@@ -481,11 +511,8 @@ export default function PostManagement() {
   ];
 
   const fetchPosts = async (status) => {
-    console.log("statusss",status);
-    
-    
     try {
-      const userId = localStorage.getItem("userId")
+      const userId = localStorage.getItem("userId");
       const url = status === "total"
         ? `/api/post-status?userId=${userId}`
         : `/api/post-status?userId=${userId}&status=${status}`;
@@ -525,31 +552,91 @@ export default function PostManagement() {
     });
 
   const handleAiAgent = async () => {
-    const userId = localStorage.getItem("userId")
+    const userId = localStorage.getItem("userId");
+
     if (!prompt.trim()) {
       showToast("Please enter a prompt before generating!", "error");
       return;
     }
 
     try {
-      setIsGenerating(true);
-      let logoBase64 = null;
-      if (logo) logoBase64 = await fileToBase64(logo);
+      // Check User Subscription & Wallet
+      const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+      if (!userRes.ok) {
+        showToast("Failed to fetch user data", "error");
+        return;
+      }
 
+      const userData = await userRes.json();
+      const subscription = userData.subscription || {};
+      const walletBalance = userData.wallet || 0;
+
+      setUserWallet(walletBalance);
+
+      // Check if subscription is Free plan
+      if (subscription.plan === "Free" || subscription.status !== "active") {
+        setShowUpgradePlan(true);
+        return;
+      }
+
+      // Check if wallet has sufficient balance (550 coins required)
+      if (walletBalance < 350) {
+        setShowInsufficientBalance(true);
+        return;
+      }
+
+      setIsGenerating(true);
+      setAiResponse(null);
+      setCountdown(59);
+
+      // Start countdown timer
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Convert logo file to base64 (if provided)
+      let logoBase64 = null;
+      if (logo) {
+        logoBase64 = await fileToBase64(logo);
+      }
+
+      // Call AI Agent API with JSON body
       const res = await fetch("/api/aiAgent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, logo: logoBase64 }),
+        body: JSON.stringify({
+          prompt: prompt,
+          logo: logoBase64,
+        }),
       });
 
-      if (!res.ok) throw new Error("Failed to generate post");
+      clearInterval(timer);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to generate post from AI agent.");
+      }
 
       const apiResponse = await res.json();
-      if (!apiResponse.success) throw new Error(apiResponse.error);
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || "AI agent failed with no specific error.");
+      }
 
-      const { output: aiOutput, logoUrl, description } = apiResponse.data;
+      const data = apiResponse.data || {};
+      const aiOutput = data.output;
+      const logoUrl = data.logoUrl;
+      const description = data.description;
 
-      const postRes = await fetch("/ ", {
+      setAiResponse(data);
+
+      // Save post in MongoDB
+      const postRes = await fetch("/api/post-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -562,8 +649,32 @@ export default function PostManagement() {
       });
 
       const postData = await postRes.json();
-      if (!postData.success) throw new Error("Failed to save post");
+      if (!postData.success) {
+        throw new Error(postData.error || "Failed to save post in database.");
+      }
 
+      // Deduct 550 coins from wallet
+      const walletRes = await fetch("/api/auth/signup", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          amount: 350,
+          type: "deduct",
+        }),
+      });
+
+      const walletData = await walletRes.json();
+      
+      if (walletData.error) {
+        console.warn("Wallet deduction failed:", walletData.error);
+        showToast(walletData.error, "error");
+      } else {
+        showToast("350 coins deducted for AI post ✅", "success");
+        setUserWallet((prev) => Math.max(0, prev - 350));
+      }
+
+      // Update frontend state
       setPosts((prev) => [postData.data, ...prev]);
       setAllCounts((prev) => ({
         ...prev,
@@ -571,13 +682,17 @@ export default function PostManagement() {
         pending: prev.pending + 1,
       }));
 
-      showToast("AI Post Generated Successfully! 🎉");
+      showToast("AI Post Generated & Saved Successfully! 🎉");
+
       setPrompt("");
       setLogo(null);
+      setCountdown(0);
     } catch (error) {
+      console.error("Generation Error:", error);
       showToast(error.message || "Failed to generate AI post!", "error");
     } finally {
       setIsGenerating(false);
+      setCountdown(0);
     }
   };
 
@@ -587,8 +702,7 @@ export default function PostManagement() {
 
   const handleUpdateStatus = async (id, newStatus) => {
     const scheduleDate = scheduleDates[id];
-        const userId = localStorage.getItem("userId")
-
+    const userId = localStorage.getItem("userId");
 
     if (newStatus === "scheduled" && !scheduleDate) {
       showToast("Please select a schedule date!", "error");
@@ -625,9 +739,8 @@ export default function PostManagement() {
     }
   };
 
-
   const handleEditDescription = async (id, newDescription) => {
-        const userId = localStorage.getItem("userId")
+    const userId = localStorage.getItem("userId");
 
     try {
       const res = await fetch("/api/post-status", {
@@ -657,47 +770,56 @@ export default function PostManagement() {
 
   const handlePost = async (post) => {
     setIsPosting(true);
-    
+
     try {
-      const fullAccount = localStorage.getItem("accountId");
-      const accountId = fullAccount.split("/").pop();
+      const accountId = localStorage.getItem("accountId");
       const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
+      const session = { accessToken: localStorage.getItem("accessToken") };
+      const slug = localStorage.getItem("slug");
 
       const response = await fetch(
         "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
           body: JSON.stringify({
             city: slug,
             account: accountId,
-            bookUrl: payloadDetails?.website,
-            output: post.aiOutput,
-            description: post.description,
-            cityName: payloadDetails?.locality,
-            accessToken: session?.accessToken,
+            bookUrl: payloadDetails.website,
+            output: post?.aiOutput || "",
+            description: post?.description || "",
+            cityName: payloadDetails.locality,
+            accessToken: session?.accessToken || "",
+            extraData: payloadDetails,
           }),
         }
       );
 
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = await response.text();
+      }
+
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-      const data = await response.json();
-      
-      // Hide posting loader
+      console.log("Webhook response:", data);
+
       setIsPosting(false);
-      
-      // Show success animation
       setShowSuccess(true);
-      
     } catch (error) {
+      console.error("Post error:", error);
       setIsPosting(false);
       showToast("Failed to send post", "error");
     }
   };
 
   const handleReject = async (id) => {
-                const userId = localStorage.getItem("userId")
+    const userId = localStorage.getItem("userId");
 
     if (!confirm("Are you sure you want to delete this post?")) return;
 
@@ -770,41 +892,29 @@ export default function PostManagement() {
     }
   };
 
-    // Check scheduled posts periodically
-   useEffect(() => {    
-  const triggeredPosts = new Set(); // To store posts that have already been triggered
+  useEffect(() => {    
+    const triggeredPosts = new Set();
 
-  
+    const checkScheduledPosts = (posts) => {
+      const now = new Date();
 
-  const checkScheduledPosts = (posts) => {
-    const now = new Date();
+      posts.forEach((post) => {
+        if (
+          post.status === "scheduled" &&
+          post.scheduledDate
+        ) {
+          const scheduledTime = new Date(post.scheduledDate);
 
-    posts.forEach((post) => {
-      if (
-        post.status === "scheduled" &&
-        post.scheduledDate
-      ) {
-        const scheduledTime = new Date(post.scheduledDate);
-        
-
-        if (now >= scheduledTime) {
-          triggeredPosts.add(post._id); // ✅ Mark as triggered
+          if (now >= scheduledTime) {
+            triggeredPosts.add(post._id);
+          }
         }
-      }
-    });
-  };
+      });
+    };
 
-  const interval = setInterval(checkScheduledPosts, 60000); // Check every minute
-  return () => clearInterval(interval);
-}, [posts]);
-
-
-// useEffect(()=>{
-//   if (typeof window !== 'undefined') {
-//     console.log("1234567890");
-    
-//   }
-// },[])
+    const interval = setInterval(checkScheduledPosts, 60000);
+    return () => clearInterval(interval);
+  }, [posts]);
 
   useEffect(() => {
     fetchPosts(activeTab);
@@ -1031,7 +1141,26 @@ export default function PostManagement() {
 
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
         {toast && <Toast message={toast.message} type={toast.type} />}
-        {isGenerating && <LoadingOverlay />}
+        {isGenerating && <LoadingOverlay countdown={countdown} />}
+        {showInsufficientBalance && (
+          <InsufficientBalanceModal
+            walletBalance={userWallet}
+            onClose={() => setShowInsufficientBalance(false)}
+            onRecharge={() => {
+              setShowInsufficientBalance(false);
+              window.location.href = "/wallet";
+            }}
+          />
+        )}
+        {showUpgradePlan && (
+          <UpgradePlanModal
+            onClose={() => setShowUpgradePlan(false)}
+            onUpgrade={() => {
+              setShowUpgradePlan(false);
+              window.location.href = "/subscription";
+            }}
+          />
+        )}
         {isPosting && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
             <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-10 flex flex-col items-center space-y-6 max-w-md w-full border-4 border-white/30">
@@ -1051,7 +1180,6 @@ export default function PostManagement() {
         )}
         {showSuccess && <SuccessOverlay onComplete={() => setShowSuccess(false)} />}
 
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-8 md:p-10 mt-16 sm:mt-8 shadow-2xl border-4 border-white">
           <h1 className="text-4xl md:text-5xl font-black text-white mb-3 flex items-center gap-3">
             <Sparkles className="w-10 h-10" />
@@ -1062,7 +1190,6 @@ export default function PostManagement() {
           </p>
         </div>
 
-        {/* Post Input */}
         <PostInput
           prompt={prompt}
           setPrompt={setPrompt}
@@ -1072,8 +1199,7 @@ export default function PostManagement() {
           loading={isGenerating}
         />
 
-        {/* Tabs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {tabs.map((tab) => (
             <TabButton
               key={tab.id}
@@ -1085,7 +1211,6 @@ export default function PostManagement() {
           ))}
         </div>
 
-        {/* Posts Grid */}
         {filteredPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPosts.map((post) => (

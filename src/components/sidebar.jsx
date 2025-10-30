@@ -132,7 +132,7 @@ export default function Sidebar({ children, user }) {
   const router = useRouter();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = React.useState(!isMobile);
-  const [userPlan, setUserPlan] = React.useState('Standard');
+  const [userPlan, setUserPlan] = React.useState('');
   const [walletBalance, setWalletBalance] = React.useState(0);
   const [transactions, setTransactions] = React.useState([]);
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -172,9 +172,9 @@ export default function Sidebar({ children, user }) {
         
           
           setWalletBalance(data.user.wallet);
-          setWallet(data.user.wallet)
+          // setWallet(data.user.wallet)
           // Also update localStorage for backup
-          localStorage.setItem('walletBalance', data.wallet.toString());
+          // localStorage.setItem('walletBalance', data.wallet.toString());
         }
       
     } catch (error) {
@@ -288,8 +288,7 @@ export default function Sidebar({ children, user }) {
     if (userId) {
       fetchWalletBalance();
     }
-    setWalletDialogOpen(true);
-    handleMenuClose();
+    router.push("/wallet")
   };
 
   const handleWalletDialogClose = () => {
@@ -466,7 +465,7 @@ export default function Sidebar({ children, user }) {
       </List>
 
       {/* Logout Button at Bottom */}
-      <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
+      {/* <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
         <Button
           variant="contained"
           color="error"
@@ -481,9 +480,12 @@ export default function Sidebar({ children, user }) {
         >
           Expire Session
         </Button>
-      </Box>
+      </Box> */}
     </Box>
   );
+
+  console.log("user",user);
+  
 
   return (
     <>
@@ -528,7 +530,7 @@ export default function Sidebar({ children, user }) {
               />
 
               {/* Plan Chip with Upgrade Option */}
-              <Chip
+              {/* <Chip
                 label={planConfig.label}
                 icon={<UpgradeIcon sx={{ color: 'white !important' }} />}
                 onClick={handleUpgradeClick}
@@ -544,7 +546,7 @@ export default function Sidebar({ children, user }) {
                     transition: 'all 0.2s',
                   },
                 }}
-              />
+              /> */}
 
               {/* User Menu */}
               <Box
@@ -579,7 +581,7 @@ export default function Sidebar({ children, user }) {
                 {!isMobile && (
                   <>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {user?.name || 'Guest'}
+                      {user?.name}
                     </Typography>
                     <ArrowDownIcon />
                   </>
@@ -608,7 +610,7 @@ export default function Sidebar({ children, user }) {
           <MenuItem disabled>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {user?.name || 'Guest'}
+                {user?.name}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {user?.email || 'No email'}

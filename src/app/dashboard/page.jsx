@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import CircularProgress from "@mui/material/CircularProgress";
 import {
@@ -83,8 +83,8 @@ export default function DashboardPage() {
   const [nextPageToken, setNextPageToken] = useState(null);
   const [hasMore, setHasMore] = useState(false);
 
-  const userPlan = session?.user?.plan || "Standard";
-  const maxAccounts = userPlan === "Standard" ? 1 : 0;
+  const userPlan = session?.user?.plan || "";
+  const maxAccounts = userPlan === "" ? 1 : 0;
 
   const listRef = useRef()
 
@@ -173,6 +173,8 @@ useEffect(() => {
     }
   };
 const handleListingData = (listing) => {
+  console.log("listinglisting",listing);
+  
   const dataToSend = {
     locality: listing?.storefrontAddress?.locality || "",
     website: listing?.websiteUri || "",
@@ -180,6 +182,7 @@ const handleListingData = (listing) => {
 
   // Save to localStorage instead of sessionStorage
   localStorage.setItem("listingData", JSON.stringify(dataToSend));
+  localStorage.setItem("accountId", listing.accountId);
 
   // Navigate
   router.push(`/post-management/${listing.name}`);
@@ -288,6 +291,15 @@ const handleListingData = (listing) => {
               </h1>
               <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name || "User"} 👋</p>
             </div>
+{session && (
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:from-red-600 hover:to-pink-600 transition-all duration-300"
+        >
+          Logout
+        </button>
+      )}
+
 
             {accounts.length < maxAccounts && (
               <button

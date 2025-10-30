@@ -106,11 +106,43 @@ export async function PUT(req) {
         message: "Wallet updated successfully",
         userId: user.userId,
         wallet: user.wallet,
-        status: 200 
+        status: 200,
       }),
+      { status: 200 }
     );
   } catch (error) {
     console.error("Wallet Update Error:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+    });
+  }
+}
+
+// ✅ GET USER BY userId
+export async function GET(req) {
+  await dbConnect();
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: "userId is required in query params" }),
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findOne({ userId }).select("-passwordHash");
+    if (!user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+      });
+    }
+
+    return new Response(JSON.stringify(user), { status: 200 });
+  } catch (error) {
+    console.error("Get User Error:", error);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 500,
     });

@@ -502,10 +502,11 @@ const handleAiAgent = async () => {
       pending: prev.pending + 1,
     }));
 
-    setPrompt("");
-    setLogo(null);
 
     showToast("AI Post Generated & Saved Successfully! 🎉");
+    
+    setPrompt("");
+    setLogo(null);
   } catch (error) {
     console.error("Generation Error:", error);
     showToast(error.message || "Failed to generate AI post!", "error");
