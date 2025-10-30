@@ -198,8 +198,8 @@ const handleListingData = (listing) => {
       console.log("allListings", allListings);
 
       const total = allListings.length;
-      const verified = allListings.filter((l) => l.metadata?.canModifyServiceList === true).length;
-      const pending = allListings.filter((l) => l.openInfo?.status === "OPEN_FOR_BUSINESS_UNSPECIFIED").length;
+      const verified = allListings.filter((l) => l.openInfo?.status === "OPEN").length;
+      const pending = allListings.filter((l) => l.openInfo?.status === "OPEN_FOROPEN_BUSINESS_UNSPECIFIED").length;
       const unverified = total - verified - pending;
       setSummary({ total, verified, unverified, pending });
     }
@@ -275,6 +275,9 @@ const handleListingData = (listing) => {
   
 
 
+  console.log("summary",summary);
+  
+
 
 
   return (
@@ -342,7 +345,7 @@ const handleListingData = (listing) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Verified</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">10</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{summary.verified}</p>
                 </div>
                 <CheckCircle className="w-10 h-10 text-green-500 opacity-80" />
               </div>

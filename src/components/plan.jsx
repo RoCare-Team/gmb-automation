@@ -14,21 +14,21 @@ export default function Plan({ user }) {
     {
       name: "Basic Plan",
       monthlyPrice: 999,
+      monthlyCredits: 1000,
       description: "Perfect for small businesses starting with automation.",
-
       features: [
         "Smart-generated GMB posts",
         "Auto post publishing on Google My Business",
         "No auto review reply",
         "No service list automation",
         "1000 Credits Included /month",
-
       ],
       goal: "Keep your GMB active with regular smart-generated posts automatically published.",
     },
     {
       name: "Standard Plan",
       monthlyPrice: 1499,
+      monthlyCredits: 1500,
       description: "Ideal for growing businesses that want engagement automation.",
       features: [
         "Smart-generated GMB posts",
@@ -43,6 +43,7 @@ export default function Plan({ user }) {
     {
       name: "Premium Plan",
       monthlyPrice: 1999,
+      monthlyCredits: 3000,
       description: "For businesses that want complete GMB automation.",
       features: [
         "Smart-generated GMB posts",
@@ -64,6 +65,18 @@ export default function Plan({ user }) {
         return Math.round(monthlyPrice * 12 * 0.80); // 20% off
       default:
         return monthlyPrice;
+    }
+  };
+
+  // 💎 Calculate total credits based on billing cycle
+  const calculateCredits = (monthlyCredits) => {
+    switch (billingCycle) {
+      case "quarterly":
+        return monthlyCredits * 3;
+      case "yearly":
+        return monthlyCredits * 12;
+      default:
+        return monthlyCredits;
     }
   };
 
@@ -122,6 +135,7 @@ export default function Plan({ user }) {
       }
 
       const finalPrice = calculatePrice(plan.monthlyPrice);
+      const totalCredits = calculateCredits(plan.monthlyCredits);
       
       const orderRes = await fetch("/api/subscribe", {
         method: "POST",
@@ -150,6 +164,7 @@ export default function Plan({ user }) {
         order_id: orderData.id,
         handler: async (response) => {
           try {
+            // Step 1: Verify payment
             const verifyRes = await fetch("/api/subscribe/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -162,14 +177,47 @@ export default function Plan({ user }) {
             });
 
             const result = await verifyRes.json();
-            if (result.success) {
-              toast.success(`Subscribed to ${plan.name} successfully!`);
-              localStorage.setItem("Plan", plan.name);
-              router.push("/dashboard");
-            } else {
+            if (!result.success) {
               toast.error(result.error || "Payment verification failed");
+              setLoading(false);
+              return;
             }
+
+            // Step 2: Update wallet credits using existing API
+            const walletRes = await fetch("/api/auth/signup", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId,
+                amount: totalCredits,
+                type: "add"
+              }),
+            });
+
+            const walletResult = await walletRes.json();
+            
+            if (walletRes.ok && walletResult.message) {
+ toast.success(
+  `Subscribed to ${plan.name} successfully! ${totalCredits} credits added to your wallet.`,
+  {
+    duration: 1000, // Hide after 1 second
+  }
+);
+
+              localStorage.setItem("Plan", plan.name);
+              
+              // Refresh the page or redirect to dashboard
+              setTimeout(() => {
+                  toast.dismiss(); // Close all active toasts
+
+                router.push("/dashboard");
+              }, 1500);
+            } else {
+              toast.error("Payment successful but credit update failed. Please contact support.");
+            }
+            
           } catch (err) {
+            console.error("Payment processing error:", err);
             toast.error("Verification failed!");
           } finally {
             setLoading(false);
@@ -189,8 +237,22 @@ export default function Plan({ user }) {
       });
       rzp.open();
     } catch (err) {
+      console.error("Subscription error:", err);
       toast.error("Something went wrong!");
       setLoading(false);
+    }
+  };
+
+  // 📝 Format credits display with billing cycle info
+  const formatCreditsDisplay = (feature, monthlyCredits) => {
+    if (!feature.includes("Credits Included")) return feature;
+    
+    const totalCredits = calculateCredits(monthlyCredits);
+    
+    if (billingCycle === "monthly") {
+      return `${totalCredits} Credits Included /month`;
+    } else {
+      return `${totalCredits} Credits Included (${monthlyCredits}/month)`;
     }
   };
 
@@ -252,6 +314,7 @@ export default function Plan({ user }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl w-full">
         {basePlans.map((plan) => {
           const finalPrice = calculatePrice(plan.monthlyPrice);
+          const totalCredits = calculateCredits(plan.monthlyCredits);
           const savings = getSavings();
           const originalPrice = billingCycle === "quarterly" 
             ? plan.monthlyPrice * 3 
@@ -312,7 +375,7 @@ export default function Plan({ user }) {
                           plan.highlight ? "text-white" : "text-blue-600"
                         }`}
                       />
-                      <span>{feature}</span>
+                      <span>{formatCreditsDisplay(feature, plan.monthlyCredits)}</span>
                     </li>
                   ))}
                 </ul>
@@ -324,7 +387,7 @@ export default function Plan({ user }) {
                     plan.highlight
                       ? "bg-white text-blue-600 hover:bg-gray-100"
                       : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loading ? "Processing..." : "Subscribe"}
                 </button>

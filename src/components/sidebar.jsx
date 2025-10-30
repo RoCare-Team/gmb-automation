@@ -530,9 +530,8 @@ export default function Sidebar({ children, user }) {
               />
 
               {/* Plan Chip with Upgrade Option */}
-              {/* <Chip
-                label={planConfig.label}
-                icon={<UpgradeIcon sx={{ color: 'white !important' }} />}
+              <Chip
+                label={localStorage.getItem("Plan")}
                 onClick={handleUpgradeClick}
                 sx={{
                   fontWeight: 600,
@@ -546,7 +545,7 @@ export default function Sidebar({ children, user }) {
                     transition: 'all 0.2s',
                   },
                 }}
-              /> */}
+              />
 
               {/* User Menu */}
               <Box

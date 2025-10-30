@@ -296,178 +296,209 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all">
-      <a href={post.aiOutput} target="_blank" rel="noopener noreferrer">
-        <div className="relative group">
-          <img
-            src={post?.aiOutput || "https://via.placeholder.com/400"}
-            alt="Post"
-            className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity"
-          />
-          <div
-            className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
-              post.status === "pending"
-                ? "bg-yellow-500/90 text-white"
-                : post.status === "approved"
-                ? "bg-green-500/90 text-white"
-                : post.status === "posted"
-                ? "bg-purple-600/90 text-white"
-                : "bg-blue-500/90 text-white"
-            }`}
-          >
-            {post.status.toUpperCase()}
-          </div>
-        </div>
-      </a>
+   <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all">
+  <a href={post.aiOutput} target="_blank" rel="noopener noreferrer">
+    <div className="relative group">
+      {/* 🖼️ Post Image */}
+      <img
+        src={post?.aiOutput || "https://via.placeholder.com/400"}
+        alt="Post"
+        className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity"
+      />
 
-      <div className="p-6 space-y-5">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <strong className="text-gray-900 font-bold flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-blue-600" />
-              Description
-            </strong>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition"
-              >
-                <Edit3 className="w-3 h-3" />
-                Edit
-              </button>
-            )}
-          </div>
-
-          {isEditing ? (
-            <div className="space-y-3">
-              <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                className="w-full p-3 border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none text-gray-800 text-sm min-h-[120px]"
-                rows={5}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:shadow-lg transition"
-                >
-                  <Save className="w-4 h-4" />
-                  Save
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className={`text-sm text-gray-700 leading-relaxed ${showFull ? "" : "line-clamp-3"}`}>
-                {post?.description || "No description available"}
-              </p>
-              {post?.description?.length > 150 && (
-                <button
-                  onClick={() => setShowFull(!showFull)}
-                  className="flex items-center gap-1 text-blue-600 text-sm font-semibold mt-2 hover:text-blue-700"
-                >
-                  {showFull ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  {showFull ? "Show Less" : "Show More"}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-
-        <p className="text-xs text-gray-500 flex items-center gap-1 pt-2 border-t border-gray-100">
-          <Calendar className="w-3 h-3" />
-          Created: {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "N/A"}
-        </p>
-
-        <div className="pt-3 space-y-3">
-          {post.status === "pending" && (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => onUpdateStatus(post._id, "approved")}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-              >
-                <CheckCircle className="w-5 h-5" />
-                Approve
-              </button>
-              <button
-                onClick={() => onReject(post._id)}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-              >
-                <X className="w-5 h-5" />
-                Reject
-              </button>
-            </div>
-          )}
-
-          {post.status === "approved" && (
-            <div className="space-y-3">
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
-                <label className="text-sm font-bold text-gray-700">Schedule Post</label>
-                <input
-                  type="datetime-local"
-                  value={scheduleDates[post._id] || ""}
-                  onChange={(e) => onDateChange(post._id, e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="w-full border-2 border-green-400 rounded-lg px-4 py-3 text-sm text-gray-700 focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all"
-                />
-                <p className="text-xs text-gray-600">📅 Select current or future date & time</p>
-                <button
-                  onClick={() => onUpdateStatus(post._id, "scheduled")}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-                >
-                  <Calendar className="w-5 h-5" />
-                  Schedule Post
-                </button>
-                <button
-                  onClick={() => handlePost(post)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
-                >
-                  <Send className="w-5 h-5" />
-                  Post Now
-                </button>
-              </div>
-            </div>
-          )}
-
-          {post.status === "scheduled" && (
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-5 space-y-4">
-              <div className="bg-white rounded-lg p-3 border border-blue-200">
-                <p className="text-sm text-gray-700 font-semibold flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-blue-600" />
-                  Scheduled for:
-                </p>
-                <p className="text-blue-700 font-black text-lg">
-                  {post.scheduledDate
-                    ? new Date(post.scheduledDate).toLocaleString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "Not set"}
-                </p>
-              </div>
-
-              <button
-                onClick={() => handlePost(post)}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
-              >
-                <Send className="w-5 h-5" />
-                Post Now
-              </button>
-            </div>
-          )}
-        </div>
+      {/* 🔖 Status Badge */}
+      <div
+        className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
+          post.status === "pending"
+            ? "bg-yellow-500/90 text-white"
+            : post.status === "approved"
+            ? "bg-green-500/90 text-white"
+            : post.status === "posted"
+            ? "bg-purple-600/90 text-white"
+            : "bg-blue-500/90 text-white"
+        }`}
+      >
+        {post.status.toUpperCase()}
       </div>
+
+      {/* ⬇️ Download & Share Icons */}
+     <div className="absolute bottom-4 right-4 flex gap-3 transition-opacity">
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      handleDownload(post);
+    }}
+    className="p-2 bg-white/80 hover:bg-white rounded-full shadow-md backdrop-blur-sm transition"
+    title="Download"
+  >
+    <Download className="w-4 h-4 text-blue-600" />
+  </button>
+
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      handleShare(post);
+    }}
+    className="p-2 bg-white/80 hover:bg-white rounded-full shadow-md backdrop-blur-sm transition"
+    title="Share"
+  >
+    <Share2 className="w-4 h-4 text-blue-600" />
+  </button>
+</div>
+
     </div>
+  </a>
+
+  {/* 📝 Description + Actions */}
+  <div className="p-6 space-y-5">
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <strong className="text-gray-900 font-bold flex items-center gap-2">
+          <ImageIcon className="w-4 h-4 text-blue-600" />
+          Description
+        </strong>
+        {!isEditing && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition"
+          >
+            <Edit3 className="w-3 h-3" />
+            Edit
+          </button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-3">
+          <textarea
+            value={editedDescription}
+            onChange={(e) => setEditedDescription(e.target.value)}
+            className="w-full p-3 border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none text-gray-800 text-sm min-h-[120px]"
+            rows={5}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:shadow-lg transition"
+            >
+              <Save className="w-4 h-4" />
+              Save
+            </button>
+            <button
+              onClick={handleCancel}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className={`text-sm text-gray-700 leading-relaxed ${showFull ? "" : "line-clamp-3"}`}>
+            {post?.description || "No description available"}
+          </p>
+          {post?.description?.length > 150 && (
+            <button
+              onClick={() => setShowFull(!showFull)}
+              className="flex items-center gap-1 text-blue-600 text-sm font-semibold mt-2 hover:text-blue-700"
+            >
+              {showFull ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showFull ? "Show Less" : "Show More"}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+
+    <p className="text-xs text-gray-500 flex items-center gap-1 pt-2 border-t border-gray-100">
+      <Calendar className="w-3 h-3" />
+      Created: {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "N/A"}
+    </p>
+
+    <div className="pt-3 space-y-3">
+      {post.status === "pending" && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => onUpdateStatus(post._id, "approved")}
+            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+          >
+            <CheckCircle className="w-5 h-5" />
+            Approve
+          </button>
+          <button
+            onClick={() => onReject(post._id)}
+            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+          >
+            <X className="w-5 h-5" />
+            Reject
+          </button>
+        </div>
+      )}
+
+      {post.status === "approved" && (
+        <div className="space-y-3">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
+            <label className="text-sm font-bold text-gray-700">Schedule Post</label>
+            <input
+              type="datetime-local"
+              value={scheduleDates[post._id] || ""}
+              onChange={(e) => onDateChange(post._id, e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full border-2 border-green-400 rounded-lg px-4 py-3 text-sm text-gray-700 focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all"
+            />
+            <p className="text-xs text-gray-600">📅 Select current or future date & time</p>
+            <button
+              onClick={() => onUpdateStatus(post._id, "scheduled")}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+            >
+              <Calendar className="w-5 h-5" />
+              Schedule Post
+            </button>
+            <button
+              onClick={() => handlePost(post)}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
+            >
+              <Send className="w-5 h-5" />
+              Post Now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {post.status === "scheduled" && (
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-5 space-y-4">
+          <div className="bg-white rounded-lg p-3 border border-blue-200">
+            <p className="text-sm text-gray-700 font-semibold flex items-center gap-2 mb-1">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              Scheduled for:
+            </p>
+            <p className="text-blue-700 font-black text-lg">
+              {post.scheduledDate
+                ? new Date(post.scheduledDate).toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Not set"}
+            </p>
+          </div>
+
+          <button
+            onClick={() => handlePost(post)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
+          >
+            <Send className="w-5 h-5" />
+            Post Now
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
   );
 };
 
@@ -768,55 +799,55 @@ export default function PostManagement() {
     }
   };
 
-  const handlePost = async (post) => {
-    setIsPosting(true);
+const handlePost = async (post) => {
+  setIsPosting(true);
 
-    try {
-      const accountId = localStorage.getItem("accountId");
+  try {
+    const accountId = localStorage.getItem("accountId");
       const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
-      const session = { accessToken: localStorage.getItem("accessToken") };
-      const slug = localStorage.getItem("slug");
 
-      const response = await fetch(
-        "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            city: slug,
-            account: accountId,
-            bookUrl: payloadDetails.website,
-            output: post?.aiOutput || "",
-            description: post?.description || "",
-            cityName: payloadDetails.locality,
-            accessToken: session?.accessToken || "",
-            extraData: payloadDetails,
-          }),
-        }
-      );
 
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        data = await response.text();
+    const response = await fetch(
+      "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          city: slug,
+          account: accountId,
+          bookUrl: payloadDetails.website,
+          output: post?.aiOutput || "",
+          description: post?.description || "",
+          cityName: payloadDetails.locality,
+          accessToken: session?.accessToken || "",
+          extraData: payloadDetails, // agar aapko local storage ka data bhi bhejna hai
+        }),
       }
+    );
 
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-      console.log("Webhook response:", data);
-
-      setIsPosting(false);
-      setShowSuccess(true);
-    } catch (error) {
-      console.error("Post error:", error);
-      setIsPosting(false);
-      showToast("Failed to send post", "error");
+    // Agar response json nahi bhej raha hai
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = await response.text(); // fallback
     }
-  };
+
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+    console.log("Webhook response:", data);
+
+    setIsPosting(false);
+    setShowSuccess(true);
+  } catch (error) {
+    console.error("Post error:", error);
+    setIsPosting(false);
+    showToast("Failed to send post", "error");
+  }
+};
 
   const handleReject = async (id) => {
     const userId = localStorage.getItem("userId");
