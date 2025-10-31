@@ -101,6 +101,7 @@ export default function LimbuAILanding() {
             </span>
             <br />
             <span>with AI Power</span>
+            
           </h1>
 
           <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed">
