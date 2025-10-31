@@ -26,19 +26,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TextField,
   Card,
   CardContent,
   Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Tabs,
-  Tab,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -53,11 +43,7 @@ import {
   Upgrade as UpgradeIcon,
   KeyboardArrowDown as ArrowDownIcon,
   AccountBalanceWallet as WalletIcon,
-  Add as AddIcon,
-  LocalOffer as CouponIcon,
-  History as HistoryIcon,
 } from '@mui/icons-material';
-import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -132,25 +118,59 @@ export default function Sidebar({ children, user }) {
   const router = useRouter();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [open, setOpen] = React.useState(!isMobile);
-  const [userPlan, setUserPlan] = React.useState('');
+  const [userPlan, setUserPlan] = React.useState('Free');
   const [walletBalance, setWalletBalance] = React.useState(0);
-  const [transactions, setTransactions] = React.useState([]);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = React.useState(false);
-  const [walletDialogOpen, setWalletDialogOpen] = React.useState(false);
-  const [selectedAmount, setSelectedAmount] = React.useState(null);
-  const [couponCode, setCouponCode] = React.useState('');
-  const [discount, setDiscount] = React.useState(0);
-  const [tabValue, setTabValue] = React.useState(0);
-  const [loading, setLoading] = React.useState(false);
   const [userId, setUserId] = React.useState(null);
+  const [subscriptionData, setSubscriptionData] = React.useState(null);
+  const [subscriptionLoading, setSubscriptionLoading] = React.useState(false);
 
+  // Fetch user subscription details from API
+  const fetchSubscriptionDetails = async () => {
+    setSubscriptionLoading(true);
+    try {
+      const storedUserId = localStorage.getItem('userId');
+      if (!storedUserId) {
+        console.error('No userId found');
+        setUserPlan('Free');
+        return;
+      }
 
-  // Coupon codes
-  const validCoupons = {
-    'SAVE10': 10,
-    'SAVE20': 20,
-    'WELCOME50': 50,
+      const response = await fetch(`/api/auth/signup?userId=${storedUserId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptionData(data);
+        
+        // Check subscription status
+        if (data.subscription && data.subscription.status === 'active') {
+          setUserPlan(data.subscription.plan || 'Premium Plan');
+          localStorage.setItem('Plan', data.subscription.plan || 'Premium Plan');
+        } else {
+          setUserPlan('Free');
+          localStorage.setItem('Plan', 'Free');
+        }
+
+        // Update wallet balance from subscription data
+        if (data.wallet !== undefined) {
+          setWalletBalance(data.wallet);
+          localStorage.setItem('walletBalance', data.wallet.toString());
+        }
+      } else {
+        setUserPlan('Free');
+        localStorage.setItem('Plan', 'Free');
+      }
+    } catch (error) {
+      console.error('Error fetching subscription details:', error);
+      setUserPlan('Free');
+      localStorage.setItem('Plan', 'Free');
+    } finally {
+      setSubscriptionLoading(false);
+    }
   };
 
   // Fetch wallet balance from API
@@ -169,95 +189,45 @@ export default function Sidebar({ children, user }) {
 
       if (response.ok) {
         const data = await response.json();
-        
-          
-          setWalletBalance(data.user.wallet);
-          // setWallet(data.user.wallet)
-          // Also update localStorage for backup
-          // localStorage.setItem('walletBalance', data.wallet.toString());
-        }
-      
+        setWalletBalance(data.user.wallet);
+        localStorage.setItem('walletBalance', data.user.wallet.toString());
+      }
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
-    }
-  };
-
-  // Update wallet via API
-  const updateWalletAPI = async (amount, type = 'add') => {
-    setLoading(true);
-    try {
-      const storedUserId = localStorage.getItem('userId');
-      if (!storedUserId) {
-        toast.error('User ID not found');
-        return false;
-      }
-
-      const response = await fetch('/api/auth/signup', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: storedUserId,
-          amount: Number(amount),
-          type: type, // 'add', 'deduct', or 'replace'
-        }),
-      });
-
-      const data = await response.json();
-      console.log("databbbbbbbbbbbbbbbbb",data);
-      
-      
-
-      if (data.status) {
-        // Fetch updated balance
-        await fetchWalletBalance();
-        return true;
-      } else {
-        toast.error(data.message || 'Failed to update wallet');
-        return false;
-      }
-    } catch (error) {
-      console.error('Wallet update error:', error);
-      toast.error('Something went wrong');
-      return false;
-    } finally {
-      setLoading(false);
     }
   };
 
   // Get plan and wallet from localStorage and API on mount
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedPlan = localStorage.getItem('Plan');
-      if (storedPlan) {
-        setUserPlan(storedPlan);
-      }
-
       const storedUserId = localStorage.getItem('userId');
       if (storedUserId) {
         setUserId(storedUserId);
-        // Fetch real-time wallet balance
+        fetchSubscriptionDetails();
         fetchWalletBalance();
       } else {
-        // Fallback to localStorage if no userId
+        const storedPlan = localStorage.getItem('Plan');
+        if (storedPlan) {
+          setUserPlan(storedPlan);
+        } else {
+          setUserPlan('Free');
+        }
+
         const storedBalance = localStorage.getItem('walletBalance');
         if (storedBalance) {
           setWalletBalance(parseInt(storedBalance));
         }
       }
-
-      const storedTransactions = localStorage.getItem('transactions');
-      if (storedTransactions) {
-        setTransactions(JSON.parse(storedTransactions));
-      }
     }
   }, []);
 
-  // Refresh wallet balance periodically
+  // Refresh wallet balance and subscription periodically
   React.useEffect(() => {
     if (userId) {
       const interval = setInterval(() => {
         fetchWalletBalance();
-      }, 30000); // Refresh every 30 seconds
+        fetchSubscriptionDetails();
+      }, 30000);
 
       return () => clearInterval(interval);
     }
@@ -275,8 +245,13 @@ export default function Sidebar({ children, user }) {
   };
 
   const handleUpgradeClick = () => {
-    setUpgradeDialogOpen(true);
-    handleMenuClose();
+    if (userPlan === 'Free' || subscriptionData?.subscription?.status !== 'active') {
+      handleMenuClose();
+      router.push('/subscription');
+    } else {
+      setUpgradeDialogOpen(true);
+      handleMenuClose();
+    }
   };
 
   const handleUpgradeDialogClose = () => {
@@ -284,86 +259,21 @@ export default function Sidebar({ children, user }) {
   };
 
   const handleWalletClick = () => {
-    // Refresh balance when opening wallet
+    // Refresh balance before navigating
     if (userId) {
       fetchWalletBalance();
     }
-    router.push("/wallet")
-  };
-
-  const handleWalletDialogClose = () => {
-    setWalletDialogOpen(false);
-    setSelectedAmount(null);
-    setCouponCode('');
-    setDiscount(0);
-    setTabValue(0);
-  };
-
-  const handleApplyCoupon = () => {
-    const upperCoupon = couponCode.toUpperCase();
-    if (validCoupons[upperCoupon]) {
-      setDiscount(validCoupons[upperCoupon]);
-      toast.success(`Coupon applied! ${validCoupons[upperCoupon]}% discount`);
-    } else {
-      setDiscount(0);
-      toast.error('Invalid coupon code');
-    }
-  };
-
-  const handleAddCoins = (amount) => {
-    setSelectedAmount(amount);
-  };
-
-  const calculateFinalPrice = (price) => {
-    if (discount > 0) {
-      return (price - (price * discount / 100)).toFixed(2);
-    }
-    return price.toFixed(2);
-  };
-
-  const handleConfirmPurchase = async () => {
-    if (selectedAmount) {
-      const pkg = coinPackages?.find(p => p.amount === selectedAmount);
-      const finalPrice = calculateFinalPrice(pkg.price);
-
-      // Update wallet via API
-      const success = await updateWalletAPI(selectedAmount, 'add');
-
-      if (success) {
-        // Save transaction locally
-        const newTransaction = {
-          id: Date.now(),
-          date: new Date().toLocaleString(),
-          type: 'Credit',
-          amount: selectedAmount,
-          price: finalPrice,
-          coupon: discount > 0 ? couponCode.toUpperCase() : 'None',
-          discount: discount,
-        };
-
-        const updatedTransactions = [newTransaction, ...transactions];
-        setTransactions(updatedTransactions);
-
-        // Save to localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
-        }
-
-        toast.success(`Successfully added ${selectedAmount} coins to your wallet!`);
-        handleWalletDialogClose();
-      }
-    }
+    handleMenuClose();
+    router.push('/wallet');
   };
 
   const handleSignOut = async () => {
     try {
-      // Clear all localStorage data
       if (typeof window !== 'undefined') {
         localStorage.clear();
       }
-
       toast.success('Logged out successfully!');
-      router.push("/login")
+      router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to logout. Please try again.');
@@ -377,19 +287,12 @@ export default function Sidebar({ children, user }) {
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 
-  const coinPackages = [
-    { amount: 500, price: 5, popular: false },
-    { amount: 1000, price: 10, popular: true },
-    { amount: 2000, price: 18, popular: false },
-    { amount: 3000, price: 25, popular: false },
-  ];
-
-  // Get plan color and display
   const getPlanConfig = (plan) => {
-    const planLower = plan?.toLowerCase() || 'standard';
+    const planLower = plan?.toLowerCase() || 'free';
 
     switch (planLower) {
       case 'premium':
+      case 'premium plan':
       case 'pro':
         return {
           label: 'Premium',
@@ -397,26 +300,33 @@ export default function Sidebar({ children, user }) {
           color: 'white',
         };
       case 'enterprise':
+      case 'enterprise plan':
         return {
           label: 'Enterprise',
           gradient: 'linear-gradient(to right, #8b5cf6, #6d28d9)',
           color: 'white',
         };
       case 'standard':
-      default:
+      case 'standard plan':
         return {
           label: 'Standard',
           gradient: 'linear-gradient(to right, #3b82f6, #2563eb)',
           color: 'white',
         };
+      case 'free':
+      default:
+        return {
+          label: 'Free',
+          gradient: 'linear-gradient(to right, #6b7280, #4b5563)',
+          color: 'white',
+        };
     }
   };
 
-  const planConfig = getPlanConfig(userPlan);  
+  const planConfig = getPlanConfig(userPlan);
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
       <DrawerHeader>
         <IconButton onClick={handleDrawerClose}>
           {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
@@ -425,7 +335,6 @@ export default function Sidebar({ children, user }) {
 
       <Divider />
 
-      {/* Menu List */}
       <List sx={{ flex: 1, overflowY: 'auto' }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
@@ -463,40 +372,16 @@ export default function Sidebar({ children, user }) {
           </ListItem>
         ))}
       </List>
-
-      {/* Logout Button at Bottom */}
-      {/* <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
-        <Button
-          variant="contained"
-          color="error"
-          fullWidth
-          onClick={handleSignOut}
-          sx={{
-            borderRadius: 2,
-            textTransform: 'none',
-            fontWeight: 500,
-            '&:hover': { backgroundColor: '#d32f2f' },
-          }}
-        >
-          Expire Session
-        </Button>
-      </Box> */}
     </Box>
   );
-
-  console.log("user",user);
-  
 
   return (
     <>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <CssBaseline />
+        <Toaster position="top-right" />
 
-
-        {/* AppBar */}
         <AppBar position="fixed" open={open}>
-                <Toaster position="top-right" />
-
           <Toolbar sx={{ justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               {(!open || isMobile) && (
@@ -510,14 +395,14 @@ export default function Sidebar({ children, user }) {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {/* Wallet Chip */}
+              {/* Wallet Chip - Click to navigate to wallet page */}
               <Chip
                 label={`${walletBalance} Coins`}
                 icon={<WalletIcon sx={{ color: 'white !important' }} />}
                 onClick={handleWalletClick}
                 sx={{
                   fontWeight: 600,
-                  background: 'linear-gradient(to right, #667eea, #bbc7c3ff)',
+                  background: 'linear-gradient(to right, #10b981, #059669)',
                   color: 'white',
                   border: 'none',
                   cursor: 'pointer',
@@ -529,9 +414,16 @@ export default function Sidebar({ children, user }) {
                 }}
               />
 
-              {/* Plan Chip with Upgrade Option */}
+              {/* Plan Chip - Click to upgrade or view subscription */}
               <Chip
-                label={localStorage.getItem("Plan")}
+                label={subscriptionLoading ? 'Loading...' : (userPlan || 'Free')}
+                icon={
+                  subscriptionLoading ? (
+                    <CircularProgress size={16} sx={{ color: 'white !important' }} />
+                  ) : (
+                    <UpgradeIcon sx={{ color: 'white !important' }} />
+                  )
+                }
                 onClick={handleUpgradeClick}
                 sx={{
                   fontWeight: 600,
@@ -627,9 +519,18 @@ export default function Sidebar({ children, user }) {
             <ListItemIcon>
               <UpgradeIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Upgrade Plan</ListItemText>
+            <ListItemText>
+              {userPlan === 'Free' || subscriptionData?.subscription?.status !== 'active'
+                ? 'Upgrade Plan'
+                : 'Manage Subscription'}
+            </ListItemText>
           </MenuItem>
-          <MenuItem onClick={() => { handleMenuClose(); router.push('/settings'); }}>
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              router.push('/settings');
+            }}
+          >
             <ListItemIcon>
               <SettingsIcon fontSize="small" />
             </ListItemIcon>
@@ -653,281 +554,175 @@ export default function Sidebar({ children, user }) {
           </MenuItem>
         </Menu>
 
-        {/* Wallet Dialog */}
-        <Dialog
-          open={walletDialogOpen}
-          onClose={handleWalletDialogClose}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #667eea 100%)',
-            color: 'white',
-            fontWeight: 700,
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <WalletIcon />
-                Wallet
-              </Box>
-              {loading && <CircularProgress size={24} sx={{ color: 'white' }} />}
-            </Box>
+        {/* Subscription Details Dialog */}
+        <Dialog open={upgradeDialogOpen} onClose={handleUpgradeDialogClose} maxWidth="md" fullWidth>
+          <DialogTitle
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              fontWeight: 700,
+            }}
+          >
+            Subscription Details
           </DialogTitle>
-          <DialogContent sx={{ mt: 2 }}>
-            <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 2 }}>
-              <Tab label="Add Coins" icon={<AddIcon />} iconPosition="start" />
-              <Tab label="Transactions" icon={<HistoryIcon />} iconPosition="start" />
-            </Tabs>
-
-            {tabValue === 0 && (
+          <DialogContent sx={{ mt: 3 }}>
+            {subscriptionLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
               <>
-                <Box sx={{ mb: 3, textAlign: 'center', p: 2, background: '#f0fdf4', borderRadius: 2 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#667eea' }}>
-                    {walletBalance} Coins
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Current Balance (Live)
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={fetchWalletBalance}
-                    disabled={loading}
-                    sx={{ mt: 1 }}
-                  >
-                    {loading ? 'Refreshing...' : 'Refresh Balance'}
-                  </Button>
-                </Box>
-
-                <Grid container spacing={2} sx={{ mb: 3, px: 4 }}>
-                  {coinPackages.map((pkg) => (
-                    <Grid item xs={12} sm={6} key={pkg.amount}>
-                      <Card
-                        onClick={() => handleAddCoins(pkg.amount)}
-                        sx={{
-                          cursor: 'pointer',
-                          border: selectedAmount === pkg.amount ? '3px solid #10b981' : '2px solid #e5e7eb',
-                          borderRadius: 2,
-                          transition: 'all 0.2s',
-                          position: 'relative',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)',
-                          },
-                        }}
-                      >
-                        <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                          <Box sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 60,
-                            height: 60,
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #10b981 0%, #667eea 100%)',
-                            mb: 2,
-                          }}>
-                            <Typography sx={{ fontSize: 24, color: 'white', fontWeight: 700 }}>
-                              {pkg.amount}
-                            </Typography>
-                          </Box>
-                          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                            {pkg.amount} Coins
-                          </Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 700, color: '#10b981' }}>
-                            ${pkg.price}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-
-                {/* Coupon Code Section */}
-                <Box sx={{ mb: 3, p: 2, background: '#fef3c7', borderRadius: 2, border: '1px dashed #f59e0b' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <CouponIcon sx={{ color: '#f59e0b' }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      Have a Coupon Code?
+                <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)' }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                      Current Plan
                     </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <TextField
-                      size="small"
-                      placeholder="Enter coupon code"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      fullWidth
-                      sx={{ background: 'white' }}
-                    />
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Plan Name
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {subscriptionData?.subscription?.plan || 'Free'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Status
+                          </Typography>
+                          <Chip
+                            label={
+                              subscriptionData?.subscription?.status === 'active' ? 'Active' : 'Inactive'
+                            }
+                            color={
+                              subscriptionData?.subscription?.status === 'active' ? 'success' : 'default'
+                            }
+                            size="small"
+                            sx={{ mt: 0.5 }}
+                          />
+                        </Box>
+                      </Grid>
+                      {subscriptionData?.subscription?.status === 'active' && (
+                        <>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Start Date
+                              </Typography>
+                              <Typography variant="body1">
+                                {new Date(subscriptionData.subscription.date).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Expiry Date
+                              </Typography>
+                              <Typography variant="body1">
+                                {new Date(subscriptionData.subscription.expiry).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Order ID
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                {subscriptionData.subscription.orderId}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Payment ID
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                {subscriptionData.subscription.paymentId}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Wallet Balance
+                              </Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 600, color: '#10b981' }}>
+                                {subscriptionData.wallet || walletBalance} Coins
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </>
+                      )}
+                    </Grid>
+                  </CardContent>
+                </Card>
+
+                {subscriptionData?.subscription?.status !== 'active' && (
+                  <Box
+                    sx={{
+                      p: 3,
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      borderRadius: 2,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                      Unlock Premium Features
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Upgrade your plan to access advanced features and boost your productivity!
+                    </Typography>
                     <Button
                       variant="contained"
-                      onClick={handleApplyCoupon}
+                      size="large"
+                      onClick={() => {
+                        handleUpgradeDialogClose();
+                        router.push('/subscription');
+                      }}
                       sx={{
-                        background: 'linear-gradient(to right, #f59e0b, #d97706)',
+                        background: 'linear-gradient(to right, #667eea, #764ba2)',
+                        color: 'white',
+                        fontWeight: 600,
+                        px: 4,
                         '&:hover': {
-                          background: 'linear-gradient(to right, #d97706, #b45309)',
+                          background: 'linear-gradient(to right, #5568d3, #6941a0)',
                         },
                       }}
                     >
-                      Apply
+                      View Plans & Upgrade
                     </Button>
-                  </Box>
-                  {discount > 0 && (
-                    <Typography variant="caption" sx={{ color: '#667eea', fontWeight: 600, mt: 1, display: 'block' }}>
-                      ✓ {discount}% discount applied!
-                    </Typography>
-                  )}
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                    Try: SAVE10, SAVE20, or WELCOME50
-                  </Typography>
-                </Box>
-
-                {selectedAmount && (
-                  <Box sx={{
-                    p: 2,
-                    background: '#f0fdf4',
-                    borderRadius: 2,
-                    border: '1px solid #10b981',
-                  }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
-                      Purchase Summary
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Coins:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {selectedAmount} Coins
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Original Price:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ${coinPackages.find(p => p.amount === selectedAmount)?.price}
-                      </Typography>
-                    </Box>
-                    {discount > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2" color="success.main">Discount ({discount}%):</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
-                          -${(coinPackages.find(p => p.amount === selectedAmount)?.price * discount / 100).toFixed(2)}
-                        </Typography>
-                      </Box>
-                    )}
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                        Total Price:
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 700, color: '#10b981' }}>
-                        ${calculateFinalPrice(coinPackages.find(p => p.amount === selectedAmount)?.price)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2">New Balance:</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {walletBalance + selectedAmount} Coins
-                      </Typography>
-                    </Box>
                   </Box>
                 )}
               </>
             )}
-
-            {tabValue === 1 && (
-              <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Coins</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Price</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Coupon</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Discount</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {transactions.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} align="center">
-                          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                            No transactions yet
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      transactions.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>{transaction.date}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={transaction.type}
-                              size="small"
-                              color="success"
-                            />
-                          </TableCell>
-                          <TableCell>{transaction.amount}</TableCell>
-                          <TableCell>${transaction.price}</TableCell>
-                          <TableCell>{transaction.coupon}</TableCell>
-                          <TableCell>{transaction.discount}%</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
           </DialogContent>
           <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button
-              onClick={handleWalletDialogClose}
-              variant="outlined"
-              sx={{ textTransform: 'none' }}
-            >
-              Cancel
+            <Button onClick={handleUpgradeDialogClose} variant="outlined">
+              Close
             </Button>
-            {tabValue === 0 && (
+            {subscriptionData?.subscription?.status === 'active' && (
               <Button
-                onClick={handleConfirmPurchase}
+                onClick={() => {
+                  handleUpgradeDialogClose();
+                  router.push('/subscription');
+                }}
                 variant="contained"
-                disabled={!selectedAmount || loading}
                 sx={{
-                  textTransform: 'none',
-                  background: 'linear-gradient(to right, #667eea, #667eea)',
+                  background: 'linear-gradient(to right, #667eea, #764ba2)',
                   '&:hover': {
-                    background: 'linear-gradient(to right, #667eea, #667eea)',
+                    background: 'linear-gradient(to right, #5568d3, #6941a0)',
                   },
                 }}
               >
-                {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Confirm Purchase'}
+                Change Plan
               </Button>
             )}
-          </DialogActions>
-        </Dialog>
-
-        {/* Upgrade Dialog */}
-        <Dialog
-          open={upgradeDialogOpen}
-          onClose={handleUpgradeDialogClose}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            fontWeight: 700,
-          }}>
-            Upgrade Your Plan
-          </DialogTitle>
-          <DialogContent sx={{ mt: 2 }}>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              Current Plan: <strong>{planConfig.label}</strong>
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Contact support to upgrade your plan.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleUpgradeDialogClose}>Close</Button>
           </DialogActions>
         </Dialog>
 
@@ -949,7 +744,7 @@ export default function Sidebar({ children, user }) {
           </Drawer>
         )}
 
-        {/* Main content */}
+        {/* Main Content */}
         <Box component="main" sx={{ flexGrow: 1, bgcolor: '#f5f6fa' }}>
           <DrawerHeader />
           {children}

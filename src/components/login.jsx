@@ -32,79 +32,101 @@ export default function LoginPage() {
     setMessageType(type);
   };
 
-  const sendOtp = async () => {
-    if (!phone || phone.length < 10) {
-      showMessage("Please enter a valid phone number", "error");
-      return;
-    }
-    
-    setIsLoading(true);
-    showMessage("Sending OTP...", "info");
-    
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
-      
-      if (res.ok) {
-        showMessage("OTP sent successfully ✓", "success");
-        setIsExisting(data.isExistingUser);
-        setTimeout(() => setStep("otp"), 500);
-      } else {
-        showMessage(data.error || "Failed to send OTP", "error");
-      }
-    } catch (error) {
-      showMessage("Network error. Please try again.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const sendOtp = async () => {
+  if (!phone || phone.length < 10) {
+    showMessage("Please enter a valid phone number", "error");
+    return;
+  }
 
-  const verifyOtp = async () => {
-    if (!otp || otp.length < 4) {
-      showMessage("Please enter a valid OTP", "error");
-      return;
-    }
-    
-    setIsLoading(true);
-    showMessage("Verifying OTP...", "info");
-    
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, otp }),
-      });
-      const data = await res.json();
+  // 🧪 Skip API if test number
+  if (phone === "9999999999") {
+    showMessage("Test OTP: 12345", "info");
+    setIsExisting(true);
+    setTimeout(() => setStep("otp"), 500);
+    return;
+  }
 
-      if (data.step === "collect_details") {
-        // New user - needs to complete registration
-        showMessage("OTP verified! Please complete your profile.", "success");
-        setTimeout(() => setStep("details"), 500);
-      } else if (res.ok && data.token) {
-        // Existing user - login successful
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userId", data.user.userId);
-        localStorage.setItem("fullName", data.user.fullName);
-        showMessage("Login successful! Redirecting...", "success");
-       if(data.token){
-         router.push("/dashboard")
-       }
-       else {
-        router.push("/login")
-       }
-      } else {
-        showMessage(data.error || "Invalid OTP", "error");
-      }
-    } catch (error) {
-      showMessage("Network error. Please try again.", "error");
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  showMessage("Sending OTP...", "info");
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      showMessage("OTP sent successfully ✓", "success");
+      setIsExisting(data.isExistingUser);
+      setTimeout(() => setStep("otp"), 500);
+    } else {
+      showMessage(data.error || "Failed to send OTP", "error");
     }
-  };
+  } catch (error) {
+    showMessage("Network error. Please try again.", "error");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const verifyOtp = async () => {
+  if (!otp || otp.length < 4) {
+    showMessage("Please enter a valid OTP", "error");
+    return;
+  }
+
+  // 🧪 Test account shortcut (no API)
+  if (phone === "9999999999" && otp === "12345") {
+    showMessage("Test login successful! Redirecting...", "success");
+    const testUser = {
+      userId: "test_user_001",
+      fullName: "Test User",
+      phone: "9999999999",
+    };
+
+    // Save to localStorage like a real login
+    localStorage.setItem("token", "test_token_123");
+    localStorage.setItem("userId", testUser.userId);
+    localStorage.setItem("fullName", testUser.fullName);
+
+    setTimeout(() => router.push("/dashboard"), 800);
+    return;
+  }
+
+  setIsLoading(true);
+  showMessage("Verifying OTP...", "info");
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, otp }),
+    });
+    const data = await res.json();
+
+    if (data.step === "collect_details") {
+      // New user - needs to complete registration
+      showMessage("OTP verified! Please complete your profile.", "success");
+      setTimeout(() => setStep("details"), 500);
+    } else if (res.ok && data.token) {
+      // Existing user - login successful
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.user.userId);
+      localStorage.setItem("fullName", data.user.fullName);
+      showMessage("Login successful! Redirecting...", "success");
+      setTimeout(() => router.push("/dashboard"), 800);
+    } else {
+      showMessage(data.error || "Invalid OTP", "error");
+    }
+  } catch (error) {
+    showMessage("Network error. Please try again.", "error");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const completeRegistration = async () => {
     if (!name || !email) {
@@ -376,7 +398,7 @@ export default function LoginPage() {
                 disabled={isLoading}
                 className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? "Processing..." : "Complete Registration"}
+                {isLoading ? "Processing..." : "Complete Onboarding"}
               </button>
             </div>
 
