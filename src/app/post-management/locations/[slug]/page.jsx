@@ -938,29 +938,29 @@ const handlePost = async (post) => {
     }
   };
 
-  useEffect(() => {    
-    const triggeredPosts = new Set();
+  // useEffect(() => {    
+  //   const triggeredPosts = new Set();
 
-    const checkScheduledPosts = (posts) => {
-      const now = new Date();
+  //   const checkScheduledPosts = (posts) => {
+  //     const now = new Date();
 
-      posts.forEach((post) => {
-        if (
-          post.status === "scheduled" &&
-          post.scheduledDate
-        ) {
-          const scheduledTime = new Date(post.scheduledDate);
+  //     posts?.forEach((post) => {
+  //       if (
+  //         post.status === "scheduled" &&
+  //         post.scheduledDate
+  //       ) {
+  //         const scheduledTime = new Date(post.scheduledDate);
 
-          if (now >= scheduledTime) {
-            triggeredPosts.add(post._id);
-          }
-        }
-      });
-    };
+  //         if (now >= scheduledTime) {
+  //           triggeredPosts.add(post._id);
+  //         }
+  //       }
+  //     });
+  //   };
 
-    const interval = setInterval(checkScheduledPosts, 60000);
-    return () => clearInterval(interval);
-  }, [posts]);
+  //   const interval = setInterval(checkScheduledPosts, 60000);
+  //   return () => clearInterval(interval);
+  // }, [posts]);
 
   useEffect(() => {
     fetchPosts(activeTab);

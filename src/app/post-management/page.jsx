@@ -957,7 +957,7 @@ const handlePost = async (post) => {
     const checkScheduledPosts = (posts) => {
       const now = new Date();
 
-      posts.forEach((post) => {
+      posts?.forEach((post) => {
         if (
           post.status === "scheduled" &&
           post.scheduledDate
