@@ -34,8 +34,7 @@ export default function ContactPage() {
           Contact Us
         </h1>
         <p className="text-center text-gray-600 mb-8">
-          Have questions about Razorpay setup or payments? Contact us anytime at{" "}
-          <span className="font-semibold text-gray-900">8506097730</span>.
+          Have questions ????
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -112,8 +111,7 @@ export default function ContactPage() {
         )}
 
         <div className="mt-10 text-center text-gray-500 text-sm">
-          <p>📞 Support Helpline: <strong>8506097730</strong></p>
-          <p>💼 Razorpay Customer Support — Available 24/7</p>
+          <p>📞 Support Helpline: <strong></strong></p>
         </div>
       </div>
     </div>
