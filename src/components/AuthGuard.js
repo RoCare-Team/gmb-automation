@@ -18,7 +18,7 @@ export default function AuthGuard({ children }) {
 
     // If userId found and currently on /login → redirect to dashboard
     if (userId && pathname === "/login") {
-      router.replace("/");
+      router.replace("/dashboard");
     }
 
     setIsChecking(false);
