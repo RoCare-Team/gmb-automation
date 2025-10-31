@@ -31,6 +31,7 @@ export async function POST(req) {
       const url = `https://api.savshka.co.in/api/sms?key=${key}&from=${from}&to=${phone}&body=${encodedMsg}&entityid=${entityid}&templateid=${tmpid}`;
 
       console.log("Sending OTP:", url);
+
       await axios.get(url).catch(() => {
         throw new Error("Failed to send OTP via Savshka");
       });
@@ -49,17 +50,33 @@ export async function POST(req) {
 
     // ✅ Step 2: VERIFY OTP
     const otpRecord = await OTP.findOne({ phone });
-    if (!otpRecord) return NextResponse.json({ error: "OTP not sent" }, { status: 400 });
+
+    if (!otpRecord) {
+      return NextResponse.json(
+        { error: "OTP not sent yet. Please request a new one." },
+        { status: 400 }
+      );
+    }
 
     const isExpired = (Date.now() - otpRecord.createdAt.getTime()) / 1000 / 60 > 5;
-    if (isExpired) return NextResponse.json({ error: "OTP expired" }, { status: 400 });
-    if (otpRecord.otp.toString() !== otp.toString())
-      return NextResponse.json({ error: "Invalid OTP" }, { status: 400 });
+    if (isExpired) {
+      return NextResponse.json(
+        { error: "OTP expired. Please request a new one." },
+        { status: 400 }
+      );
+    }
 
-    // ✅ Step 3: Check user
+    if (otpRecord.otp.toString() !== otp.toString()) {
+      return NextResponse.json(
+        { error: "OTP not correct. Please try again." },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Step 3: Check user existence
     let user = await User.findOne({ phone });
 
-    // new user → need name + email
+    // For new users, ensure name + email provided
     if (!user && (!name || !email)) {
       return NextResponse.json({
         step: "collect_details",
@@ -69,6 +86,15 @@ export async function POST(req) {
 
     // ✅ Step 4: Register new user if not exist
     if (!user) {
+      // Check if email already used
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: "This email address is already registered. Please use another one." },
+          { status: 400 }
+        );
+      }
+
       user = await User.create({
         userId: `USR${Date.now()}`,
         fullName: name,
@@ -84,6 +110,7 @@ export async function POST(req) {
       });
     }
 
+    // ✅ Delete OTP after successful verification
     await OTP.deleteOne({ phone });
 
     // ✅ Generate JWT (include subscription in payload)
@@ -93,7 +120,7 @@ export async function POST(req) {
         userId: user.userId,
         fullName: user.fullName,
         phone: user.phone,
-        subscription: user.subscription, // 🔥 add subscription in token
+        subscription: user.subscription,
       },
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -108,6 +135,18 @@ export async function POST(req) {
     });
   } catch (err) {
     console.error("OTP API Error:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+
+    // Handle duplicate email error from MongoDB (just in case)
+    if (err.code === 11000 && err.keyPattern?.email) {
+      return NextResponse.json(
+        { error: "This email address is already registered. Please use another one." },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Internal Server Error. Please try again later." },
+      { status: 500 }
+    );
   }
 }

@@ -123,7 +123,7 @@ export default function CancellationPage() {
                 target="_blank"
                 className="text-blue-600 underline"
               >
-                https://yourdomain.com
+                https://limbu.ai
               </a>
             </p>
           </div>
