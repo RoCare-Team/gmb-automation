@@ -101,7 +101,7 @@ export default function LimbuAILanding() {
             </span>
             <br />
             <span>with AI Power</span>
-            
+
           </h1>
 
           <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed">
@@ -121,10 +121,45 @@ export default function LimbuAILanding() {
             </button>
           </div>
 
+
+
+              <div id="features" className="mt-62 mb-20">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
+              Powerful <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Features</span>
+            </h2>
+            <p className="text-xl text-slate-600">Everything you need to manage your GMB presence</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, idx) => (
+              <div
+                key={idx}
+                className="group bg-white/80 backdrop-blur-sm border border-blue-100 rounded-2xl p-6 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                style={{ 
+                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s both`,
+                }}
+              >
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold mb-2 text-slate-800">{feature.title}</h3>
+                <p className="text-slate-600">{feature.description}</p>
+                <div className="mt-4 flex items-center gap-2 text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Learn more <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
           {/* Dashboard Preview */}
           <div className={`relative max-w-6xl mx-auto transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-purple-300 rounded-3xl blur-3xl opacity-20 animate-pulse" />
             <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-blue-100 p-8 shadow-2xl">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
+              {/* How <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">its Works</span> */}
+            </h2>
               {/* Tab Navigation */}
               <div className="flex gap-2 mb-6 bg-blue-50 p-1 rounded-xl">
                 <button 
@@ -297,7 +332,7 @@ export default function LimbuAILanding() {
                             <span className="text-xs font-semibold text-blue-700">AI Suggested Response</span>
                           </div>
                           <p className="text-sm text-slate-700">
-                            Thank you John! We're thrilled you had a great experience...
+                            Thank you John! We thrilled you had a great experience...
                           </p>
                           <div className="flex gap-2 mt-3">
                             <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-semibold hover:bg-blue-600 transition">
@@ -331,7 +366,7 @@ export default function LimbuAILanding() {
                           <span className="text-xs text-slate-500">5 hours ago</span>
                         </div>
                         <p className="text-sm text-slate-600 mb-3">
-                          Good experience overall, could improve waiting time...
+                          Good experience overall could improve waiting time...
                         </p>
                         <button className="text-sm text-blue-600 font-semibold hover:text-blue-700 transition flex items-center gap-1">
                           <Mail className="w-4 h-4" />
@@ -368,35 +403,7 @@ export default function LimbuAILanding() {
         </div>
 
         {/* Features Section */}
-        <div id="features" className="mt-32">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
-              Powerful <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Features</span>
-            </h2>
-            <p className="text-xl text-slate-600">Everything you need to manage your GMB presence</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, idx) => (
-              <div
-                key={idx}
-                className="group bg-white/80 backdrop-blur-sm border border-blue-100 rounded-2xl p-6 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-xl"
-                style={{ 
-                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s both`,
-                }}
-              >
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-2 text-slate-800">{feature.title}</h3>
-                <p className="text-slate-600">{feature.description}</p>
-                <div className="mt-4 flex items-center gap-2 text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                  Learn more <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    
 
         {/* Trust Section */}
         <div className="mt-32 text-center">
