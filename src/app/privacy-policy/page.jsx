@@ -5,7 +5,7 @@ export default function PolicyPage() {
     <div className="min-h-screen bg-gray-50 text-gray-800 py-10 px-6 flex flex-col items-center">
       <div className="max-w-4xl w-full bg-white rounded-2xl shadow-lg p-8">
         <h1 className="text-3xl font-bold text-blue-600 mb-4 text-center">
-          Privacy Policy & Terms of Service
+          Privacy Policy, Terms of Service & Refund Policy
         </h1>
 
         <p className="text-gray-600 text-center mb-8">
@@ -18,11 +18,11 @@ export default function PolicyPage() {
             1. Introduction
           </h2>
           <p>
-            Welcome to our SaaS Platform (“we”, “our”, “us”). We value your
-            privacy and are committed to protecting your personal information.
-            This Privacy Policy explains how we collect, use, and safeguard your
-            data when you use our services, including any payments made through
-            Razorpay.
+            Welcome to <strong>Limbu AI</strong> (“we”, “our”, “us”). We value
+            your privacy and are committed to protecting your personal
+            information. This document explains how we collect, use, and
+            safeguard your data when you use our services, including any
+            payments made through Razorpay.
           </p>
         </section>
 
@@ -32,13 +32,19 @@ export default function PolicyPage() {
             2. Information We Collect
           </h2>
           <ul className="list-disc list-inside space-y-2">
-            <li>Personal details such as name, email, phone number, and address.</li>
-            <li>Billing and payment details when you make payments via Razorpay.</li>
-            <li>Usage data like IP address, browser type, and device information.</li>
+            <li>
+              Personal details such as name, email, phone number, and address.
+            </li>
+            <li>
+              Billing and payment details when you make payments via Razorpay.
+            </li>
+            <li>
+              Usage data like IP address, browser type, and device information.
+            </li>
           </ul>
         </section>
 
-        {/* USAGE */}
+        {/* HOW WE USE */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
             3. How We Use Your Information
@@ -74,64 +80,85 @@ export default function PolicyPage() {
           </p>
         </section>
 
+        {/* TERMS OF SERVICE */}
+        <section className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            5. Terms of Service
+          </h2>
+          <p>
+            By accessing or using our platform, you agree to comply with our
+            Terms of Service. You agree not to misuse the platform, share false
+            information, or engage in any activity that violates applicable
+            laws. All payments made through Razorpay are subject to verification
+            and confirmation. Misuse of our website or fraudulent activity will
+            lead to suspension of service.
+          </p>
+        </section>
+
         {/* REFUND POLICY */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            5. Refund & Cancellation Policy
+            6. Refund & Cancellation Policy
           </h2>
           <p>
             Payments made for our SaaS platform are non-refundable once the
             service has been activated. In case of duplicate transactions or
             billing errors, please contact our support team within 7 working
-            days for resolution.
+            days for resolution. Refunds (if approved) will be processed within
+            7 business days to the original payment method.
           </p>
         </section>
 
         {/* DATA SECURITY */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            6. Data Protection
+            7. Data Protection
           </h2>
           <p>
             We follow industry-standard practices to protect your personal
             information from unauthorized access, alteration, or disclosure.
-            However, no online platform can guarantee 100% security.
+            However, no online platform can guarantee 100% security. You are
+            responsible for safeguarding your account credentials.
           </p>
         </section>
 
         {/* THIRD PARTY */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            7. Third-Party Services
+            8. Third-Party Services
           </h2>
           <p>
-            Our SaaS platform may contain links or integrations to third-party
+            Our platform may contain links or integrations to third-party
             services such as Razorpay, Google APIs, or analytics tools. We are
-            not responsible for their content or privacy practices.
+            not responsible for their content or privacy practices. Please
+            review their policies before using such services.
           </p>
         </section>
 
-        {/* CONTACT */}
+        {/* CONTACT INFO */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            8. Contact Information
+            9. Contact Information
           </h2>
           <p>
-            If you have any questions about our Privacy Policy or Razorpay
-            verification, please contact us:
+            For questions or concerns about our Privacy Policy, Terms of Service
+            or Refund Policy, please contact us:
           </p>
 
           <div className="mt-3 space-y-1">
             <p>
-              📧 <strong>Email:</strong> info@limbo.ai.com
+              📧 <strong>Email:</strong> manoj.asharma2016@gmail.com
             </p>
             <p>
-              📞 <strong>Phone:</strong> 8506097730
+              📞 <strong>Phone:</strong> +91 8506097730
+            </p>
+            <p>
+              🏢 <strong>Address:</strong> Unit No. 831, 8th Floor, JMD MEGAPOLIS, Sector 48, Gurugram, Haryana 122018
             </p>
             <p>
               🌐 <strong>Website:</strong>{" "}
               <a
-                href="https://yourdomain.com"
+                href="https://limbu.ai"
                 target="_blank"
                 className="text-blue-600 underline"
               >
@@ -145,10 +172,10 @@ export default function PolicyPage() {
         <section className="mt-8 border-t pt-4 text-sm text-gray-600">
           <p>
             By using our SaaS platform and making payments through Razorpay, you
-            consent to our Privacy Policy and Terms of Service.
+            consent to our Privacy Policy, Terms of Service, and Refund Policy.
           </p>
           <p className="mt-2 text-center text-gray-500">
-            © {new Date().getFullYear()} Your SaaS Platform. All rights reserved.
+            © {new Date().getFullYear()} Limbu AI. All rights reserved.
           </p>
         </section>
       </div>

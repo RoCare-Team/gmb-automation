@@ -440,24 +440,48 @@ export default function LimbuAILanding() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-blue-200 bg-white/50 backdrop-blur-xl py-8 mt-20">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-bold text-lg text-slate-800">limbu.ai</div>
-              <div className="text-xs text-slate-600">© 2025 All rights reserved</div>
-            </div>
-          </div>
-          <div className="flex gap-6 text-sm">
-            <a href="#privacy" className="text-slate-600 hover:text-blue-600 transition">Privacy</a>
-            <a href="#terms" className="text-slate-600 hover:text-blue-600 transition">Terms</a>
-            <a href="#contact" className="text-slate-600 hover:text-blue-600 transition">Contact</a>
-          </div>
-        </div>
-      </footer>
+     {/* Footer */}
+<footer className="relative z-10 border-t border-blue-200 bg-white/50 backdrop-blur-xl py-10 mt-20">
+  <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+
+    {/* Logo + Text */}
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center shadow-md">
+        <Sparkles className="w-5 h-5 text-white" />
+      </div>
+      <div>
+        <div className="font-bold text-lg text-slate-800">limbu.ai</div>
+        <div className="text-xs text-slate-600">© {new Date().getFullYear()} All rights reserved</div>
+      </div>
+    </div>
+
+    {/* Navigation Links */}
+    <div className="flex flex-wrap justify-center gap-6 text-sm font-medium">
+      <Link href="/" className="text-slate-600 hover:text-blue-600 transition">
+        Home
+      </Link>
+      <Link href="#features" className="text-slate-600 hover:text-blue-600 transition">
+        Features
+      </Link>
+      <Link href="#how-it-works" className="text-slate-600 hover:text-blue-600 transition">
+        How It Works
+      </Link>
+      <Link href="/contact" className="text-slate-600 hover:text-blue-600 transition">
+        Contact
+      </Link>
+      <Link href="/privacy-policy" className="text-slate-600 hover:text-blue-600 transition">
+        Privacy Policy
+      </Link>
+      <Link href="/terms-and-conditions" className="text-slate-600 hover:text-blue-600 transition">
+        Terms & Conditions
+      </Link>
+      <Link href="/cancellation-policy" className="text-slate-600 hover:text-blue-600 transition">
+        Cancellation
+      </Link>
+    </div>
+  </div>
+</footer>
+
 
       <style jsx>{`
         @keyframes fadeInUp {

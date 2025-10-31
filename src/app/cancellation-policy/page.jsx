@@ -12,27 +12,27 @@ export default function CancellationPage() {
           Effective Date: 31 October 2025
         </p>
 
-        {/* INTRODUCTION */}
+        {/* OVERVIEW */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             1. Overview
           </h2>
           <p>
             This Cancellation & Refund Policy outlines the terms applicable to
-            users (“you”, “your”) who make payments for services offered on our
-            SaaS platform (“we”, “our”, “us”). All transactions are processed
-            securely through <strong>Razorpay</strong>.
+            users (“you”, “your”) who make payments for services offered on{" "}
+            <strong>Limbo AI</strong> (“we”, “our”, “us”). All transactions are
+            processed securely through <strong>Razorpay</strong>.
           </p>
         </section>
 
-        {/* SERVICE POLICY */}
+        {/* SERVICE ACTIVATION */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             2. Service Activation
           </h2>
           <p>
             Once a payment is successfully made and the subscription/service is
-            activated, the service is deemed delivered. Due to the digital
+            activated, the service is considered delivered. Due to the digital
             nature of our SaaS platform, cancellations or refunds are generally
             not applicable once services have been initiated.
           </p>
@@ -44,7 +44,7 @@ export default function CancellationPage() {
             3. Cancellation Policy
           </h2>
           <p>
-            You may cancel your subscription plan anytime by contacting our
+            You may cancel your subscription plan at any time by contacting our
             support team before the next billing cycle begins. However, no
             refunds will be provided for the current active billing period or
             partially used subscription terms.
@@ -57,25 +57,33 @@ export default function CancellationPage() {
             4. Refund Policy
           </h2>
           <p>
-            All payments made towards service activation are <strong>non-refundable</strong>.
-            Refunds will only be issued in the following exceptional cases:
+            All payments made towards service activation are{" "}
+            <strong>non-refundable</strong>. Refunds will only be issued in the
+            following exceptional circumstances:
           </p>
           <ul className="list-disc list-inside mt-3 space-y-2">
-            <li>Duplicate payment was made due to a technical glitch.</li>
-            <li>Incorrect amount was charged due to a billing system error.</li>
+            <li>Duplicate payment was made due to a technical issue.</li>
+            <li>Incorrect amount was charged due to a billing error.</li>
             <li>
-              Payment was deducted but service was not activated within 24
+              Payment was deducted but the service was not activated within 24
               hours.
             </li>
           </ul>
           <p className="mt-3">
             In such cases, users must raise a refund request within{" "}
             <strong>7 working days</strong> from the date of payment by emailing
-            us at <strong>support@yourdomain.com</strong>.
+            us at{" "}
+            <a
+              href="mailto:Manoj.asharma2016@gmail.com"
+              className="text-blue-600 underline"
+            >
+              Manoj.asharma2016@gmail.com
+            </a>
+            .
           </p>
         </section>
 
-        {/* REFUND PROCESS */}
+        {/* REFUND PROCESSING */}
         <section className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             5. Refund Processing
@@ -111,19 +119,26 @@ export default function CancellationPage() {
 
           <div className="mt-3 space-y-1">
             <p>
-              📧 <strong>Email:</strong> info@limbo.ai.com
+              📧 <strong>Email:</strong>{" "}
+              <a
+                href="mailto:Manoj.asharma2016@gmail.com"
+                className="text-blue-600 underline"
+              >
+                Manoj.asharma2016@gmail.com
+              </a>
             </p>
             <p>
-              📞 <strong>Phone:</strong> 8506097730
+              📞 <strong>Phone:</strong> +91 8506097730
             </p>
             <p>
               🌐 <strong>Website:</strong>{" "}
               <a
-                href="https://yourdomain.com"
+                href="https://limbo.ai"
                 target="_blank"
+                rel="noopener noreferrer"
                 className="text-blue-600 underline"
               >
-                https://limbu.ai
+                https://limbo.ai
               </a>
             </p>
           </div>
@@ -136,7 +151,7 @@ export default function CancellationPage() {
             agree to this Cancellation & Refund Policy.
           </p>
           <p className="mt-2 text-center text-gray-500">
-            © {new Date().getFullYear()} Your SaaS Platform. All rights reserved.
+            © {new Date().getFullYear()} Limbo AI. All rights reserved.
           </p>
         </section>
       </div>

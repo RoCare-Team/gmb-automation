@@ -1,117 +1,52 @@
 "use client";
-import { useState } from "react";
 
-export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    message: "",
-  });
-
-  const [status, setStatus] = useState("");
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Here you can connect this with your Razorpay or backend API later
-    setStatus("Sending...");
-
-    setTimeout(() => {
-      setStatus("✅ Message Sent Successfully! We’ll contact you soon.");
-      setFormData({ fullName: "", email: "", phone: "", message: "" });
-    }, 1500);
-  };
-
+export default function ContactUs() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-10 px-4">
-      <div className="max-w-2xl w-full bg-white shadow-lg rounded-2xl p-8">
-        <h1 className="text-3xl font-bold text-center text-blue-600 mb-2">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-3xl">
+        <h1 className="text-4xl font-extrabold text-gray-800 mb-6 text-center">
           Contact Us
         </h1>
-        <p className="text-center text-gray-600 mb-8">
-          Have questions ????
+
+        <p className="text-gray-600 text-center mb-8">
+          Have questions or need help? We’re here for you. Reach out to us
+          anytime using the details below.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-4 text-center">
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter your full name"
-            />
+            <h2 className="text-lg font-semibold text-gray-700">Phone</h2>
+            <p className="text-gray-600">+91 8506097730</p>
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter your email"
-            />
+            <h2 className="text-lg font-semibold text-gray-700">Email</h2>
+            <p className="text-gray-600">Manoj.asharma2016@gmail.com</p>
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter your phone number"
-            />
+            <h2 className="text-lg font-semibold text-gray-700">Address</h2>
+            <p className="text-gray-600">
+              Unit No. 831, 8th Floor, JMD MEGAPOLIS, Sector 48, Gurugram, Haryana 122018 <br />
+            </p>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Message
-            </label>
-            <textarea
-              name="message"
-              value={formData.message}
-              onChange={handleChange}
-              required
-              rows="4"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Write your message here..."
-            ></textarea>
-          </div>
+        <div className="mt-10 text-center">
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">
+            Business Hours
+          </h2>
+          <p className="text-gray-600">Monday – Saturday: 9:00 AM – 7:00 PM</p>
+          <p className="text-gray-600">Sunday: Closed</p>
+        </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+        <div className="mt-10 text-center">
+          <a
+            href="mailto:Manoj.asharma2016@gmail.com"
+            className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
           >
-            Send Message
-          </button>
-        </form>
-
-        {status && (
-          <p className="text-center mt-4 text-green-600 font-medium">{status}</p>
-        )}
-
-        <div className="mt-10 text-center text-gray-500 text-sm">
-          <p>📞 Support Helpline: <strong></strong></p>
+            Send us an Email
+          </a>
         </div>
       </div>
     </div>
