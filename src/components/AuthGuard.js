@@ -13,12 +13,12 @@ export default function AuthGuard({ children }) {
 
     // If userId not found and not on /login → redirect to login
     if (!userId && pathname !== "/login") {
-      router.replace("/dashboard");
+      router.replace("/");
     }
 
     // If userId found and currently on /login → redirect to dashboard
     if (userId && pathname === "/login") {
-      router.replace("/dashboard");
+      router.replace("/");
     }
 
     setIsChecking(false);
