@@ -18,6 +18,9 @@ import {
   EyeOff,
   Send,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
+
 
 // Toast Component
 const Toast = ({ message, type = "success" }) => (
@@ -439,7 +442,7 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
       {post.status === "approved" && (
         <div className="space-y-3">
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
-            <label className="text-sm font-bold text-gray-700">Schedule Post</label>
+            {/* <label className="text-sm font-bold text-gray-700">Schedule Post</label>
             <input
               type="datetime-local"
               value={scheduleDates[post._id] || ""}
@@ -447,17 +450,17 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
               min={new Date().toISOString().slice(0, 16)}
               className="w-full border-2 border-green-400 rounded-lg px-4 py-3 text-sm text-gray-700 focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all"
             />
-            <p className="text-xs text-gray-600">📅 Select current or future date & time</p>
-            <button
+            <p className="text-xs text-gray-600">📅 Select current or future date & time</p> */}
+            {/* <button
               onClick={() => onUpdateStatus(post._id, "scheduled")}
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
             >
               <Calendar className="w-5 h-5" />
               Schedule Post
-            </button>
+            </button> */}
             <button
               onClick={() => handlePost(post)}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base cursor-pointer"
             >
               <Send className="w-5 h-5" />
               Post Now
@@ -510,6 +513,10 @@ export default function PostManagement() {
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
   const [showUpgradePlan, setShowUpgradePlan] = useState(false);
   const [userWallet, setUserWallet] = useState(0);
+    const { slug } = useParams();
+      const { data: session } = useSession()
+    
+  
 
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("total");
@@ -519,6 +526,7 @@ export default function PostManagement() {
   const [toast, setToast] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -804,8 +812,7 @@ const handlePost = async (post) => {
 
   try {
     const accountId = localStorage.getItem("accountId");
-      const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
-
+    const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
 
     const response = await fetch(
       "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
@@ -816,38 +823,46 @@ const handlePost = async (post) => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          city: slug,
           account: accountId,
-          bookUrl: payloadDetails.website,
+          locationData: {
+            city: slug,
+            bookUrl: payloadDetails.website,
+            cityName: payloadDetails.locality,
+          },
           output: post?.aiOutput || "",
           description: post?.description || "",
-          cityName: payloadDetails.locality,
           accessToken: session?.accessToken || "",
-          extraData: payloadDetails, // agar aapko local storage ka data bhi bhejna hai
+          extraData: payloadDetails,
         }),
       }
     );
 
-    // Agar response json nahi bhej raha hai
+    // Safely parse response
     let data;
     try {
       data = await response.json();
     } catch {
-      data = await response.text(); // fallback
+      data = await response.text();
     }
 
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    // ✅ Check for success status
+    if (response.ok) {
+      console.log("Webhook success:", data);
+      setShowSuccess(true);
+      showToast("Post successfully sent!", "success");
+    } else {
+      console.error("Webhook failed:", data);
+      showToast(`Failed to send post (Status: ${response.status})`, "error");
+    }
 
-    console.log("Webhook response:", data);
-
-    setIsPosting(false);
-    setShowSuccess(true);
   } catch (error) {
     console.error("Post error:", error);
+    showToast("Network error: Failed to send post", "error");
+  } finally {
     setIsPosting(false);
-    showToast("Failed to send post", "error");
   }
 };
+
 
   const handleReject = async (id) => {
     const userId = localStorage.getItem("userId");

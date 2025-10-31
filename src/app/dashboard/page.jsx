@@ -14,8 +14,6 @@ import {
   Star,
   Building2,
   Plus,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -42,28 +40,57 @@ export async function fetchGMBAccounts(accessToken) {
   }
 }
 
-export async function fetchLocationsByAccount(accessToken, accountId, pageToken = null) {
+export async function fetchAllLocationsByAccount(accessToken, accountId) {
   try {
-    let url = `https://mybusinessbusinessinformation.googleapis.com/v1/accounts/${accountId}/locations?readMask=name,title,storefrontAddress,websiteUri,phoneNumbers,categories,openInfo,metadata&pageSize=10`;
+    let allLocations = [];
+    let pageToken = null;
 
-    if (pageToken) {
-      url += `&pageToken=${pageToken}`;
-    }
+    do {
+      let url = `https://mybusinessbusinessinformation.googleapis.com/v1/accounts/${accountId}/locations?readMask=name,title,storefrontAddress,websiteUri,phoneNumbers,categories,openInfo,metadata&pageSize=100`;
 
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+      if (pageToken) {
+        url += `&pageToken=${pageToken}`;
+      }
 
-    if (!res.ok) throw new Error(`Failed to fetch locations for account ${accountId}`);
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
 
-    const data = await res.json();
-    return {
-      locations: data.locations || [],
-      nextPageToken: data.nextPageToken || null
-    };
+      if (!res.ok) throw new Error(`Failed to fetch locations for account ${accountId}`);
+
+      const data = await res.json();
+      
+      if (data.locations && data.locations.length > 0) {
+        allLocations = [...allLocations, ...data.locations];
+      }
+      
+      pageToken = data.nextPageToken || null;
+    } while (pageToken);
+
+    return allLocations;
   } catch (err) {
     console.error(`Error fetching locations for account ${accountId}:`, err);
-    return { locations: [], nextPageToken: null };
+    return [];
+  }
+}
+
+export async function checkVoiceOfMerchant(accessToken, locationName) {
+  try {
+    const res = await fetch(
+      `https://mybusinessverifications.googleapis.com/v1/${locationName}/VoiceOfMerchantState`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!res.ok) {
+      console.error(`Failed to check VoM for ${locationName}`);
+      return { hasVoiceOfMerchant: false, hasBusinessAuthority: false };
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error(`Error checking VoM for ${locationName}:`, err);
+    return { hasVoiceOfMerchant: false, hasBusinessAuthority: false };
   }
 }
 
@@ -76,20 +103,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState({ total: 0, verified: 0, unverified: 0, pending: 0 });
   const [initialFetchDone, setInitialFetchDone] = useState(false);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageTokens, setPageTokens] = useState([null]); // Array to store tokens for each page
-  const [nextPageToken, setNextPageToken] = useState(null);
-  const [hasMore, setHasMore] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all"); // "all", "verified", "unverified"
 
   const userPlan = session?.user?.plan || "";
   const maxAccounts = userPlan === "" ? 1 : 0;
 
-  const listRef = useRef()
-
-  // --- Fetch Accounts & Locations ---
-  const fetchInitialData = async (pageToken = null) => {
+  // --- Fetch All Accounts & Locations ---
+  const fetchInitialData = async () => {
     if (!session?.accessToken) return;
 
     setLoading(true);
@@ -104,25 +124,27 @@ export default function DashboardPage() {
       return;
     }
 
-    // Fetch locations with pagination
+    // Fetch ALL locations at once
     const accountId = accountsData[0].name.replace("accounts/", "");
-    const { locations, nextPageToken: newNextToken } = await fetchLocationsByAccount(
-      token,
-      accountId,
-      pageToken
-    );
+    const allLocations = await fetchAllLocationsByAccount(token, accountId);
 
-    if (locations.length > 0) {
-      const locationsWithAccount = locations.map((loc) => ({
-        ...loc,
-        accountId,
-        accountName: accountsData[0].accountName || accountsData[0].name,
-      }));
+    if (allLocations.length > 0) {
+      // Check Voice of Merchant for each location
+      const locationsWithVoM = await Promise.all(
+        allLocations.map(async (loc) => {
+          const vomStatus = await checkVoiceOfMerchant(token, loc.name);
+          return {
+            ...loc,
+            accountId,
+            accountName: accountsData[0].accountName || accountsData[0].name,
+            hasVoiceOfMerchant: vomStatus.hasVoiceOfMerchant,
+            hasBusinessAuthority: vomStatus.hasBusinessAuthority,
+          };
+        })
+      );
 
-      setAccounts([{ email: session.user.email, listings: locationsWithAccount }]);
-      setNextPageToken(newNextToken);
-      setHasMore(!!newNextToken);
-      toast.success("Listings loaded successfully!");
+      setAccounts([{ email: session.user.email, listings: locationsWithVoM }]);
+      toast.success(`${allLocations.length} listings loaded successfully!`);
     } else {
       setAccounts([]);
       toast.info("No locations found under these accounts.");
@@ -138,69 +160,41 @@ export default function DashboardPage() {
     }
   }, [session, initialFetchDone]);
 
-  // Handle pagination
-  const handleNextPage = () => {
-    if (nextPageToken && !loading) {
-      const newPage = currentPage + 1;
-      setCurrentPage(newPage);
+  const handleListingData = (listing) => {
+    console.log("listinglisting", listing);
+    
+    const dataToSend = {
+      locality: listing?.storefrontAddress?.locality || "",
+      website: listing?.websiteUri || "",
+    };
 
-      // Store the token for this page if not already stored
-      if (!pageTokens[newPage]) {
-        setPageTokens([...pageTokens, nextPageToken]);
-      }
+    localStorage.setItem("listingData", JSON.stringify(dataToSend));
+    localStorage.setItem("accountId", listing.accountId);
 
-      fetchInitialData(nextPageToken);
-
-      window.scrollTo({
-      top: 0,
-      behavior: 'smooth', // smooth scroll
-    });
-    }
+    router.push(`/post-management/${listing.name}`);
   };
-
-
-useEffect(() => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}, [currentPage]);
-
-
-  const handlePrevPage = () => {
-    if (currentPage > 1 && !loading) {
-      const newPage = currentPage - 1;
-      setCurrentPage(newPage);
-      const prevToken = pageTokens[newPage - 1];
-      fetchInitialData(prevToken);
-    }
-  };
-const handleListingData = (listing) => {
-  console.log("listinglisting",listing);
-  
-  const dataToSend = {
-    locality: listing?.storefrontAddress?.locality || "",
-    website: listing?.websiteUri || "",
-  };
-
-  // Save to localStorage instead of sessionStorage
-  localStorage.setItem("listingData", JSON.stringify(dataToSend));
-  localStorage.setItem("accountId", listing.accountId);
-
-  // Navigate
-  router.push(`/post-management/${listing.name}`);
-};
-
-
-
 
   // --- Summary Update ---
   useEffect(() => {
     if (accounts.length > 0) {
       const allListings = accounts.flatMap((acc) => acc.listings);
-      console.log("allListings", allListings);
+      
+      const locationDetails = allListings.map(item => {
+        const locationId = item.name.split("/")[1];
+        const accountId = item.accountId || "";
+        const locality = item.storefrontAddress?.locality || "";
+        const address = item.storefrontAddress?.addressLines?.[0] || "";
+        const title = item.title || "";
+
+        return { locationId, accountId, locality, address, title };
+      });
+
+      localStorage.setItem("locationDetails", JSON.stringify(locationDetails));
 
       const total = allListings.length;
-      const verified = allListings.filter((l) => l.openInfo?.status === "OPEN").length;
-      const pending = allListings.filter((l) => l.openInfo?.status === "OPEN_FOROPEN_BUSINESS_UNSPECIFIED").length;
-      const unverified = total - verified - pending;
+      const verified = allListings.filter((l) => l.hasVoiceOfMerchant === true).length;
+      const unverified = allListings.filter((l) => l.hasVoiceOfMerchant === false).length;
+      const pending = 0; // Can be calculated based on other criteria if needed
       setSummary({ total, verified, unverified, pending });
     }
   }, [accounts]);
@@ -217,34 +211,12 @@ const handleListingData = (listing) => {
       return;
     }
 
-    setLoading(true);
-    const token = session.accessToken;
-    const accountsData = await fetchGMBAccounts(token);
-
-    if (accountsData.length > 0) {
-      const accountId = accountsData[0].name.replace("accounts/", "");
-      const { locations } = await fetchLocationsByAccount(token, accountId);
-
-      const locationsWithAccount = locations.map((loc) => ({
-        ...loc,
-        accountId,
-        accountName: accountsData[0].accountName || accountsData[0].name,
-      }));
-
-      if (locationsWithAccount.length > 0) {
-        setAccounts((prev) => [...prev, { email: session.user.email, listings: locationsWithAccount }]);
-        toast.success("GMB listings fetched successfully!");
-      } else {
-        toast.info("No locations found under this account.");
-      }
-    }
-
-    setLoading(false);
+    await fetchInitialData();
   };
 
   // --- Verification Badge ---
   const getVerificationBadge = (listing) => {
-    const isVerified = true === true;
+    const isVerified = listing.hasVoiceOfMerchant === true;
 
     if (isVerified) {
       return (
@@ -261,6 +233,16 @@ const handleListingData = (listing) => {
     }
   };
 
+  // --- Filter Listings ---
+  const getFilteredListings = (listings) => {
+    if (filterStatus === "verified") {
+      return listings.filter((l) => l.hasVoiceOfMerchant === true);
+    } else if (filterStatus === "unverified") {
+      return listings.filter((l) => l.hasVoiceOfMerchant === false);
+    }
+    return listings; // "all"
+  };
+
   // --- Loading State ---
   if (status === "loading" || (loading && !initialFetchDone)) {
     return (
@@ -272,13 +254,6 @@ const handleListingData = (listing) => {
       </div>
     );
   }
-  
-
-
-  console.log("summary",summary);
-  
-
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -294,35 +269,37 @@ const handleListingData = (listing) => {
               </h1>
               <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name || "User"} 👋</p>
             </div>
-{session && (
-        <button
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:from-red-600 hover:to-pink-600 transition-all duration-300"
-        >
-          Logout
-        </button>
-      )}
 
+            <div className="flex items-center gap-4">
+              {session && (
+                <button
+                  onClick={() => signOut({ callbackUrl: "/dashboard" })}
+                  className="bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold px-5 py-2 rounded-xl shadow-md hover:from-red-700 hover:to-pink-700 transition-all duration-300"
+                >
+                  Logout
+                </button>
+              )}
 
-            {accounts.length < maxAccounts && (
-              <button
-                onClick={handleAddProject}
-                disabled={loading}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all px-6 py-3 flex items-center gap-2 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-              >
-                {loading ? (
-                  <CircularProgress size={20} sx={{ color: "white" }} />
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5" />
-                    Add Project
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                      {accounts.length}/{maxAccounts}
-                    </span>
-                  </>
-                )}
-              </button>
-            )}
+              {accounts.length < maxAccounts && (
+                <button
+                  onClick={handleAddProject}
+                  disabled={loading}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all px-6 py-3 flex items-center gap-2 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {loading ? (
+                    <CircularProgress size={20} sx={{ color: "white" }} />
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5" />
+                      Add Project
+                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                        {accounts.length}/{maxAccounts}
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -331,17 +308,27 @@ const handleListingData = (listing) => {
         {/* Summary Cards */}
         {accounts.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+            <div 
+              onClick={() => setFilterStatus("all")}
+              className={`bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500 cursor-pointer transition-all hover:shadow-lg ${
+                filterStatus === "all" ? "ring-2 ring-blue-500" : ""
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm font-medium">Total Listings in This Page</p>
+                  <p className="text-gray-600 text-sm font-medium">Total Listings</p>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{summary.total}</p>
                 </div>
                 <Building2 className="w-10 h-10 text-blue-500 opacity-80" />
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+            <div 
+              onClick={() => setFilterStatus("verified")}
+              className={`bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500 cursor-pointer transition-all hover:shadow-lg ${
+                filterStatus === "verified" ? "ring-2 ring-green-500" : ""
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Verified</p>
@@ -351,11 +338,16 @@ const handleListingData = (listing) => {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+            <div 
+              onClick={() => setFilterStatus("unverified")}
+              className={`bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500 cursor-pointer transition-all hover:shadow-lg ${
+                filterStatus === "unverified" ? "ring-2 ring-red-500" : ""
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Unverified</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">0</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{summary.unverified}</p>
                 </div>
                 <XCircle className="w-10 h-10 text-red-500 opacity-80" />
               </div>
@@ -395,23 +387,34 @@ const handleListingData = (listing) => {
             )}
           </div>
         ) : (
-          accounts.map((acc, idx) => (
-            <div key={idx} className="mb-8">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl px-6 py-5 flex justify-between items-center shadow-lg">
-                <h2 className="text-xl font-bold">{acc.email}</h2>
-                <span className="text-sm bg-white/20 px-4 py-2 rounded-full font-semibold backdrop-blur-sm">
-                  {acc.listings.length} {acc.listings.length === 1 ? "listing" : "listings"}
-                </span>
-              </div>
+          accounts.map((acc, idx) => {
+            const filteredListings = getFilteredListings(acc.listings);
+            
+            return (
+              <div key={idx} className="mb-8">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl px-6 py-5 flex justify-between items-center shadow-lg">
+                  <h2 className="text-xl font-bold">{acc.email}</h2>
+                  <span className="text-sm bg-white/20 px-4 py-2 rounded-full font-semibold backdrop-blur-sm">
+                    {filteredListings.length} {filteredListings.length === 1 ? "listing" : "listings"}
+                    {filterStatus !== "all" && ` (${filterStatus})`}
+                  </span>
+                </div>
 
-              <div ref={listRef} className="space-y-4 mt-4">
-                {acc.listings.map((listing, i) => (
-                  <div key={i} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden border border-gray-400">
+                {filteredListings.length === 0 ? (
+                  <div className="bg-white rounded-b-2xl shadow-lg p-12 text-center">
+                    <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No {filterStatus} listings found</h3>
+                    <p className="text-gray-600">Try selecting a different filter above.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    {filteredListings.map((listing, i) => (
+                  <div key={i} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden border border-gray-200">
                     <div className="p-6">
                       {/* Header Section */}
-                      <div className="flex justify-between items-start mb-6">
+                      <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">
                             {listing.title || listing.name || "Unnamed Listing"}
                           </h3>
                           <p className="text-sm text-gray-600 flex items-center gap-2">
@@ -422,26 +425,24 @@ const handleListingData = (listing) => {
                         {getVerificationBadge(listing)}
                       </div>
 
-                      {/* Manage Listing Button - Prominent */}
-
-                      {/* Business Details Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 rounded-xl border border-blue-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Phone className="w-5 h-5 text-blue-600" />
-                            <span className="text-sm font-semibold text-gray-700">Phone</span>
+                      {/* Business Details */}
+                      <div className="space-y-3 mb-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Phone className="w-4 h-4 text-blue-600" />
+                            <span className="text-xs font-semibold text-gray-700">Phone</span>
                           </div>
-                          <p className="text-gray-900 font-medium">{listing.phoneNumbers?.primaryPhone || "N/A"}</p>
+                          <p className="text-sm text-gray-900 font-medium">{listing.phoneNumbers?.primaryPhone || "N/A"}</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 rounded-xl border border-purple-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Globe className="w-5 h-5 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-700">Website</span>
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-3 rounded-lg border border-purple-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Globe className="w-4 h-4 text-purple-600" />
+                            <span className="text-xs font-semibold text-gray-700">Website</span>
                           </div>
                           <Link
                             href={listing.websiteUri || "#"}
-                            className="text-gray-900 font-medium truncate"
+                            className="text-sm text-gray-900 font-medium truncate block"
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -449,62 +450,34 @@ const handleListingData = (listing) => {
                           </Link>
                         </div>
 
-                        <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-4 rounded-xl border border-green-200 md:col-span-2">
-                          <div className="flex items-center gap-2 mb-2">
-                            <MapPin className="w-5 h-5 text-green-600" />
-                            <span className="text-sm font-semibold text-gray-700">Address</span>
+                        <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-3 rounded-lg border border-green-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <MapPin className="w-4 h-4 text-green-600" />
+                            <span className="text-xs font-semibold text-gray-700">Address</span>
                           </div>
-                          <p className="text-gray-900 font-medium">
+                          <p className="text-sm text-gray-900 font-medium">
                             {listing.storefrontAddress?.addressLines?.join(", ") || "N/A"}
                             {listing.storefrontAddress?.locality && `, ${listing.storefrontAddress.locality}`}
                           </p>
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-100">
-                        <button
-                          onClick={() => handleListingData(listing)}
-                          className="w-full mb-6 px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:opacity-90 transition text-base font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                        >
-                          <Star className="w-5 h-5" />
-                          Manage This Listing
-                        </button>
-
-                      </div>
+                      {/* Action Button */}
+                      <button
+                        onClick={() => handleListingData(listing)}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:opacity-90 transition text-sm font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                      >
+                        <Star className="w-4 h-4" />
+                        Manage This Listing
+                      </button>
                     </div>
                   </div>
-                ))}
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {/* Pagination Controls */}
-              {(currentPage > 1 || hasMore) && (
-                <div className="flex items-center justify-center gap-4 mt-8 bg-white rounded-xl shadow-md p-4">
-                  <button
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 1 || loading}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                    Previous
-                  </button>
-
-                  <span className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-bold">
-                    Page {currentPage}
-                  </span>
-
-                  <button
-                    onClick={handleNextPage}
-                    disabled={!hasMore || loading}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                  >
-                    Next
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
