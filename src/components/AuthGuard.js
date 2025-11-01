@@ -11,12 +11,24 @@ export default function AuthGuard({ children }) {
   useEffect(() => {
     const userId = localStorage.getItem("userId");
 
-    // If userId not found and not on /login → redirect to login
-    if (!userId && pathname !== "/login") {
+    // ✅ Public routes that don’t need authentication
+    const publicRoutes = [
+      "/",
+      "/login",
+      "/about",
+      "/contact",
+      "/privacy-policy",
+      "/cancellation-policy",
+      "/terms-and-conditions",
+      "/refund-policy",
+    ];
+
+    // If not logged in and trying to access a private route → redirect to login
+    if (!userId && !publicRoutes.includes(pathname)) {
       router.replace("/");
     }
 
-    // If userId found and currently on /login → redirect to dashboard
+    // If logged in and currently on login page → redirect to dashboard
     if (userId && pathname === "/login") {
       router.replace("/dashboard");
     }
@@ -24,7 +36,6 @@ export default function AuthGuard({ children }) {
     setIsChecking(false);
   }, [pathname, router]);
 
-  // Avoid flashing while checking auth
   if (isChecking) return null;
 
   return <>{children}</>;

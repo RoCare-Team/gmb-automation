@@ -42,7 +42,7 @@ export default function LimbuAILanding() {
     { value: "10k+", label: "Posts Created", icon: <PenTool className="w-5 h-5" /> },
     { value: "500+", label: "Businesses", icon: <TrendingUp className="w-5 h-5" /> },
     { value: "98%", label: "Response Rate", icon: <MessageSquare className="w-5 h-5" /> },
-    { value: "5min", label: "Avg. Time Saved", icon: <Clock className="w-5 h-5" /> }
+    { value: "100%", label: "90 days in traffic Double", icon: <Clock className="w-5 h-5" /> }
   ];
 
   return (
@@ -81,9 +81,11 @@ export default function LimbuAILanding() {
           <a href="#features" className="text-sm font-medium text-slate-700 hover:text-blue-600 transition">Features</a>
           <a href="#how-it-works" className="text-sm font-medium text-slate-700 hover:text-blue-600 transition">How It Works</a>
           <a href="/contact" className="text-sm font-medium text-slate-700 hover:text-blue-600 transition">Contact</a>
-          <button className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-300/50 transition-all hover:scale-105">
+         <Link href="/login">
+          <button className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-300/50 transition-all hover:scale-105 cursor-pointer">
             Get Started
           </button>
+         </Link>
         </nav>
       </header>
 
@@ -123,7 +125,7 @@ export default function LimbuAILanding() {
 
 
 
-              <div id="features" className="mt-62 mb-20">
+              <div id="features" className="mt-32 mb-20">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
               Powerful <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Features</span>
@@ -154,7 +156,8 @@ export default function LimbuAILanding() {
         </div>
 
           {/* Dashboard Preview */}
-          <div className={`relative max-w-6xl mx-auto transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+         <div id="how-it-works" className="mt-32 mb-20">
+           <div className={`relative max-w-6xl mx-auto transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-purple-300 rounded-3xl blur-3xl opacity-20 animate-pulse" />
             <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-blue-100 p-8 shadow-2xl">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
@@ -379,6 +382,7 @@ export default function LimbuAILanding() {
               )}
             </div>
           </div>
+         </div>
         </div>
 
         {/* Stats Section */}
@@ -432,9 +436,10 @@ export default function LimbuAILanding() {
             <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
               Join hundreds of businesses automating their Google My Business with AI
             </p>
-            <button className="px-10 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:scale-105 transition-all shadow-xl">
+           <Link href="/login">
+            <button className="px-10 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:scale-105 transition-all shadow-xl cursor-pointer">
               Start Your Free Trial
-            </button>
+            </button></Link>
           </div>
         </div>
       </main>
