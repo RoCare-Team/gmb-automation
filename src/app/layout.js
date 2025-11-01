@@ -4,6 +4,7 @@ import ClientLayout from "../app/client-layout";
 import AuthGuard from "@/components/AuthGuard";
 import SessionProviderWrapper from "./providers/SessionProviderWrapper"; // ✅ import wrapper
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
