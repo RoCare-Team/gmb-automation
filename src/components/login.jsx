@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Moon, Sun, Phone, Mail, User, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function lLoginPage() {
+  
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
