@@ -255,6 +255,7 @@ const handleSubscribe = async (plan) => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col items-center py-16 px-6">
       <Toaster position="top-right" />
 
@@ -391,5 +392,6 @@ const handleSubscribe = async (plan) => {
         })}
       </div>
     </div>
+    </>
   );
 }
