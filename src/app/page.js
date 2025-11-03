@@ -112,6 +112,7 @@ export default function LimbuAILanding() {
           </p>
 
 
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link href="/login">
             <button className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-blue-300/50 transition-all hover:scale-105 flex items-center gap-2">
