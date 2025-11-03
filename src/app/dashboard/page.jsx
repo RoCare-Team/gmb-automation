@@ -144,10 +144,8 @@ export default function DashboardPage() {
       );
 
       setAccounts([{ email: session.user.email, listings: locationsWithVoM }]);
-      toast.success(`${allLocations.length} listings loaded successfully!`);
     } else {
       setAccounts([]);
-      toast.info("No locations found under these accounts.");
     }
 
     setInitialFetchDone(true);

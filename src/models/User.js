@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, unique: true }, // removed `required: true`
 
     wallet: { type: Number, default: 0 },
+            freeUsedCount: { type: Number },
+
 
     subscription: {
       plan: { type: String },
@@ -17,6 +19,7 @@ const userSchema = new mongoose.Schema(
       expiry: { type: Date },
       status: { type: String, enum: ["active", "inactive"], default: "inactive" },
       maxAccounts: { type: Number, default: 0 },
+
       accounts: [
         {
           googleId: String,

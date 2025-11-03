@@ -6,7 +6,7 @@ export async function POST(req) {
   await dbConnect();
 
   try {
-    const { userId, plan } = await req.json();
+    const { userId, plan, amount } = await req.json();
 
     if (!userId || !plan) {
       return new Response(JSON.stringify({ error: "User or plan missing" }), {
@@ -20,18 +20,20 @@ export async function POST(req) {
       key_secret: process.env.RAZORPAY_SECRET,
     });
 
-    // ✅ Plan amounts (in paise)
+    // ✅ Default plan amounts (as fallback)
     const planAmounts = {
       Basic: 250 * 100,
       Standard: 500 * 100,
       Premium: 1000 * 100,
     };
 
-    const amount = planAmounts[plan] || planAmounts.Basic;
+    // ✅ Use dynamic amount if provided, otherwise fallback
+    const finalAmount =
+      amount && !isNaN(amount) ? Number(amount) * 100 : planAmounts[plan] || planAmounts.Basic;
 
     // ✅ Create Razorpay order
     const options = {
-      amount,
+      amount: finalAmount,
       currency: "INR",
       receipt: `receipt_${userId}_${Date.now()}`,
       payment_capture: 1,

@@ -600,140 +600,150 @@ export default function PostManagement() {
     }
 
     try {
-      // Check User Subscription & Wallet
-      const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
-      if (!userRes.ok) {
-        showToast("Failed to fetch user data", "error");
-        return;
+  // ✅ Check User Subscription & Wallet
+  const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+  if (!userRes.ok) {
+    showToast("Failed to fetch user data", "error");
+    return;
+  }
+
+  const userData = await userRes.json();
+  const subscription = userData.subscription || {};
+  const walletBalance = userData.wallet || 0;
+
+  setUserWallet(walletBalance);
+
+  // ✅ FIXED LOGIC:
+  // Allow Free plan users if they have 350 or more coins.
+  // Otherwise, show upgrade modal.
+  if (subscription.plan === "Free" && walletBalance < 350) {
+    setShowUpgradePlan(true);
+    return;
+  }
+
+  // ✅ If paid plan but inactive AND wallet also low → ask to upgrade
+  if (subscription.plan !== "Free" && subscription.status !== "active" && walletBalance < 350) {
+    setShowUpgradePlan(true);
+    return;
+  }
+
+  // ✅ Final check — insufficient balance for anyone
+  if (walletBalance < 350) {
+    setShowInsufficientBalance(true);
+    return;
+  }
+
+  // Continue normal flow
+  setIsGenerating(true);
+  setAiResponse(null);
+  setCountdown(59);
+
+  // Start countdown timer
+  const timer = setInterval(() => {
+    setCountdown((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        return 0;
       }
+      return prev - 1;
+    });
+  }, 1000);
 
-      const userData = await userRes.json();
-      const subscription = userData.subscription || {};
-      const walletBalance = userData.wallet || 0;
+  // Convert logo file to base64 (if provided)
+  let logoBase64 = null;
+  if (logo) {
+    logoBase64 = await fileToBase64(logo);
+  }
 
-      setUserWallet(walletBalance);
+  // Call AI Agent API
+  const res = await fetch("/api/aiAgent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt,
+      logo: logoBase64,
+    }),
+  });
 
-      // Check if subscription is Free plan
-      if (subscription.plan === "Free" || subscription.status !== "active") {
-        setShowUpgradePlan(true);
-        return;
-      }
+  clearInterval(timer);
 
-      // Check if wallet has sufficient balance (550 coins required)
-      if (walletBalance < 350) {
-        setShowInsufficientBalance(true);
-        return;
-      }
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to generate post from AI agent.");
+  }
 
-      setIsGenerating(true);
-      setAiResponse(null);
-      setCountdown(59);
+  const apiResponse = await res.json();
+  if (!apiResponse.success) {
+    throw new Error(apiResponse.error || "AI agent failed with no specific error.");
+  }
 
-      // Start countdown timer
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+  const data = apiResponse.data || {};
+  const aiOutput = data.output;
+  const logoUrl = data.logoUrl;
+  const description = data.description;
 
-      // Convert logo file to base64 (if provided)
-      let logoBase64 = null;
-      if (logo) {
-        logoBase64 = await fileToBase64(logo);
-      }
+  setAiResponse(data);
 
-      // Call AI Agent API with JSON body
-      const res = await fetch("/api/aiAgent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: prompt,
-          logo: logoBase64,
-        }),
-      });
+  // Save post in MongoDB
+  const postRes = await fetch("/api/post-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId,
+      aiOutput,
+      description,
+      logoUrl,
+      status: "pending",
+    }),
+  });
 
-      clearInterval(timer);
+  const postData = await postRes.json();
+  if (!postData.success) {
+    throw new Error(postData.error || "Failed to save post in database.");
+  }
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to generate post from AI agent.");
-      }
+  // Deduct 350 coins from wallet
+  const walletRes = await fetch("/api/auth/signup", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId,
+      amount: 350,
+      type: "deduct",
+    }),
+  });
 
-      const apiResponse = await res.json();
-      if (!apiResponse.success) {
-        throw new Error(apiResponse.error || "AI agent failed with no specific error.");
-      }
+  const walletData = await walletRes.json();
 
-      const data = apiResponse.data || {};
-      const aiOutput = data.output;
-      const logoUrl = data.logoUrl;
-      const description = data.description;
+  if (walletData.error) {
+    console.warn("Wallet deduction failed:", walletData.error);
+    showToast(walletData.error, "error");
+  } else {
+    showToast("350 coins deducted for AI post ✅", "success");
+    setUserWallet((prev) => Math.max(0, prev - 350));
+  }
 
-      setAiResponse(data);
+  // Update frontend state
+  setPosts((prev) => [postData.data, ...prev]);
+  setAllCounts((prev) => ({
+    ...prev,
+    total: prev.total + 1,
+    pending: prev.pending + 1,
+  }));
 
-      // Save post in MongoDB
-      const postRes = await fetch("/api/post-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId,
-          aiOutput,
-          description,
-          logoUrl,
-          status: "pending",
-        }),
-      });
+  showToast("AI Post Generated & Saved Successfully! 🎉");
 
-      const postData = await postRes.json();
-      if (!postData.success) {
-        throw new Error(postData.error || "Failed to save post in database.");
-      }
+  setPrompt("");
+  setLogo(null);
+  setCountdown(0);
+} catch (error) {
+  console.error("Generation Error:", error);
+  showToast(error.message || "Failed to generate AI post!", "error");
+} finally {
+  setIsGenerating(false);
+  setCountdown(0);
+}
 
-      // Deduct 550 coins from wallet
-      const walletRes = await fetch("/api/auth/signup", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          amount: 350,
-          type: "deduct",
-        }),
-      });
-
-      const walletData = await walletRes.json();
-      
-      if (walletData.error) {
-        console.warn("Wallet deduction failed:", walletData.error);
-        showToast(walletData.error, "error");
-      } else {
-        showToast("350 coins deducted for AI post ✅", "success");
-        setUserWallet((prev) => Math.max(0, prev - 350));
-      }
-
-      // Update frontend state
-      setPosts((prev) => [postData.data, ...prev]);
-      setAllCounts((prev) => ({
-        ...prev,
-        total: prev.total + 1,
-        pending: prev.pending + 1,
-      }));
-
-      showToast("AI Post Generated & Saved Successfully! 🎉");
-
-      setPrompt("");
-      setLogo(null);
-      setCountdown(0);
-    } catch (error) {
-      console.error("Generation Error:", error);
-      showToast(error.message || "Failed to generate AI post!", "error");
-    } finally {
-      setIsGenerating(false);
-      setCountdown(0);
-    }
   };
 
   const handleDateChange = (id, value) => {
@@ -839,6 +849,33 @@ const handlePost = async (post) => {
     setIsPosting(true);
 
     try {
+            const userId = localStorage.getItem("userId");
+
+       const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+    if (!userRes.ok) {
+      showToast("Failed to fetch user data", "error");
+      return;
+    }
+
+    const userData = await userRes.json();
+    const subscription = userData.subscription || {};
+    const walletBalance = userData.wallet || 0;
+    setUserWallet(walletBalance);
+
+     // ✅ If user is on Free Plan
+    if (subscription.plan === "Free" || subscription.status !== "active" && walletBalance < 350) {
+        // ⛔ Already used 2 free generations
+        showToast("You have used your 2 free AI generations. Please upgrade your plan.", "error");
+        setShowUpgradePlan(true);
+        return;
+      
+    } else {
+      // ✅ Paid Plan: Check wallet balance
+      if (walletBalance < 350) {
+        setShowInsufficientBalance(true);
+        return;
+      }
+    }
       const payloadDetails = JSON.parse(localStorage.getItem("listingData")) || {};
 
       const locationData = selectedLocations.map((loc) => ({

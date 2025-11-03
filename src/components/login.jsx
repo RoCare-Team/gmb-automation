@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Moon, Sun, Phone, Mail, User, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
-export default function LoginPage() {
+export default function lLoginPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");

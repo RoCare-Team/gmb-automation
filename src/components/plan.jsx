@@ -8,6 +8,8 @@ export default function Plan({ user }) {
   const [loading, setLoading] = useState(false);
   const [billingCycle, setBillingCycle] = useState("monthly");
   const router = useRouter();
+  const [loadingPlan, setLoadingPlan] = useState(null);
+
 
   // 💳 Base Plan Data (Monthly prices)
   const basePlans = [
@@ -116,139 +118,135 @@ export default function Plan({ user }) {
   };
 
   // 💰 Handle Payment
-  const handleSubscribe = async (plan) => {
-    setLoading(true);
+// 💰 Handle Payment
+const handleSubscribe = async (plan) => {
+  setLoadingPlan(plan.name); // ✅ Only this plan button shows "Processing..."
 
-    const res = await loadRazorpayScript();
-    if (!res) {
-      toast.error("Razorpay SDK failed to load.");
-      setLoading(false);
+  const res = await loadRazorpayScript();
+  if (!res) {
+    toast.error("Razorpay SDK failed to load.");
+    setLoadingPlan(null);
+    return;
+  }
+
+  try {
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      toast.error("User not found. Please login first.");
+      setLoadingPlan(null);
       return;
     }
 
-    try {
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        toast.error("User not found. Please login first.");
-        setLoading(false);
-        return;
-      }
+    const finalPrice = calculatePrice(plan.monthlyPrice);
+    const totalCredits = calculateCredits(plan.monthlyCredits);
 
-      const finalPrice = calculatePrice(plan.monthlyPrice);
-      const totalCredits = calculateCredits(plan.monthlyCredits);
-      
-      const orderRes = await fetch("/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          userId, 
-          plan: plan.name,
-          billingCycle,
-          amount: finalPrice
-        }),
-      });
+    const orderRes = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        plan: plan.name,
+        billingCycle,
+        amount: finalPrice,
+      }),
+    });
 
-      const orderData = await orderRes.json();
-      if (!orderRes.ok) {
-        toast.error(orderData.error || "Order creation failed");
-        setLoading(false);
-        return;
-      }
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "Auto GMB",
-        description: `${plan.name} - ${getDuration()}`,
-        order_id: orderData.id,
-        handler: async (response) => {
-          try {
-            // Step 1: Verify payment
-            const verifyRes = await fetch("/api/subscribe/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                userId,
-                plan: plan.name,
-                billingCycle,
-                payment: response,
-              }),
-            });
-
-            const result = await verifyRes.json();
-            if (!result.success) {
-              toast.error(result.error || "Payment verification failed");
-              setLoading(false);
-              return;
-            }
-
-            // Step 2: Update wallet credits using existing API
-            const walletRes = await fetch("/api/auth/signup", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                userId,
-                amount: totalCredits,
-                type: "add"
-              }),
-            });
-
-            const walletResult = await walletRes.json();
-            
-            if (walletRes.ok && walletResult.message) {
- toast.success(
-  `Subscribed to ${plan.name} successfully! ${totalCredits} credits added to your wallet.`,
-  {
-    duration: 1000, // Hide after 1 second
-  }
-);
-
-              localStorage.setItem("Plan", plan.name);
-              
-              // Refresh the page or redirect to dashboard
-              setTimeout(() => {
-                  toast.dismiss(); // Close all active toasts
-
-                router.push("/dashboard");
-              }, 1500);
-            } else {
-              toast.error("Payment successful but credit update failed. Please contact support.");
-            }
-            
-          } catch (err) {
-            console.error("Payment processing error:", err);
-            toast.error("Verification failed!");
-          } finally {
-            setLoading(false);
-          }
-        },
-        prefill: {
-          name: user?.name || "",
-          email: user?.email || "",
-        },
-        theme: { color: "#2563eb" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", () => {
-        toast.error("Payment failed!");
-        setLoading(false);
-      });
-      rzp.open();
-    } catch (err) {
-      console.error("Subscription error:", err);
-      toast.error("Something went wrong!");
-      setLoading(false);
+    const orderData = await orderRes.json();
+    if (!orderRes.ok) {
+      toast.error(orderData.error || "Order creation failed");
+      setLoadingPlan(null);
+      return;
     }
-  };
+
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "Auto GMB",
+      description: `${plan.name} - ${getDuration()}`,
+      order_id: orderData.id,
+      handler: async (response) => {
+        try {
+          // Step 1: Verify payment
+          const verifyRes = await fetch("/api/subscribe/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              plan: plan.name,
+              billingCycle,
+              payment: response,
+            }),
+          });
+
+          const result = await verifyRes.json();
+          if (!result.success) {
+            toast.error(result.error || "Payment verification failed");
+            setLoadingPlan(null);
+            return;
+          }
+
+          // Step 2: Update wallet credits using existing API
+          const walletRes = await fetch("/api/auth/signup", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              amount: totalCredits,
+              type: "add",
+            }),
+          });
+
+          const walletResult = await walletRes.json();
+
+          if (walletRes.ok && walletResult.message) {
+            toast.success(
+              `Subscribed to ${plan.name} successfully! ${totalCredits} credits added.`,
+              { duration: 1000 }
+            );
+
+            localStorage.setItem("Plan", plan.name);
+
+            setTimeout(() => {
+              toast.dismiss();
+              router.push("/dashboard");
+            }, 1500);
+          } else {
+            toast.error("Payment successful but credit update failed. Please contact support.");
+          }
+        } catch (err) {
+          console.error("Payment processing error:", err);
+          toast.error("Verification failed!");
+        } finally {
+          setLoadingPlan(null);
+        }
+      },
+      prefill: {
+        name: user?.name || "",
+        email: user?.email || "",
+      },
+      theme: { color: "#2563eb" },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", () => {
+      toast.error("Payment failed!");
+      setLoadingPlan(null);
+    });
+    rzp.open();
+  } catch (err) {
+    console.error("Subscription error:", err);
+    toast.error("Something went wrong!");
+    setLoadingPlan(null);
+  }
+};
 
   // 📝 Format credits display with billing cycle info
   const formatCreditsDisplay = (feature, monthlyCredits) => {
     if (!feature.includes("Credits Included")) return feature;
-    
+
     const totalCredits = calculateCredits(monthlyCredits);
-    
+
     if (billingCycle === "monthly") {
       return `${totalCredits} Credits Included /month`;
     } else {
@@ -259,7 +257,7 @@ export default function Plan({ user }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col items-center py-16 px-6">
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="text-center max-w-3xl mb-8">
         <h1 className="text-5xl font-extrabold text-gray-800 mb-3">
@@ -274,21 +272,19 @@ export default function Plan({ user }) {
       <div className="mb-12 bg-white rounded-2xl shadow-lg p-2 inline-flex gap-2">
         <button
           onClick={() => setBillingCycle("monthly")}
-          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-            billingCycle === "monthly"
+          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${billingCycle === "monthly"
               ? "bg-blue-600 text-white shadow-md"
               : "text-gray-600 hover:bg-gray-100"
-          }`}
+            }`}
         >
           Monthly
         </button>
         <button
           onClick={() => setBillingCycle("quarterly")}
-          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 relative ${
-            billingCycle === "quarterly"
+          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 relative ${billingCycle === "quarterly"
               ? "bg-blue-600 text-white shadow-md"
               : "text-gray-600 hover:bg-gray-100"
-          }`}
+            }`}
         >
           Quarterly
           <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
@@ -297,11 +293,10 @@ export default function Plan({ user }) {
         </button>
         <button
           onClick={() => setBillingCycle("yearly")}
-          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 relative ${
-            billingCycle === "yearly"
+          className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 relative ${billingCycle === "yearly"
               ? "bg-blue-600 text-white shadow-md"
               : "text-gray-600 hover:bg-gray-100"
-          }`}
+            }`}
         >
           Yearly
           <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
@@ -316,20 +311,19 @@ export default function Plan({ user }) {
           const finalPrice = calculatePrice(plan.monthlyPrice);
           const totalCredits = calculateCredits(plan.monthlyCredits);
           const savings = getSavings();
-          const originalPrice = billingCycle === "quarterly" 
-            ? plan.monthlyPrice * 3 
-            : billingCycle === "yearly" 
-            ? plan.monthlyPrice * 12 
-            : null;
+          const originalPrice = billingCycle === "quarterly"
+            ? plan.monthlyPrice * 3
+            : billingCycle === "yearly"
+              ? plan.monthlyPrice * 12
+              : null;
 
           return (
             <div
               key={plan.name}
-              className={`relative flex flex-col justify-between rounded-3xl border shadow-xl transition-all duration-300 hover:shadow-2xl ${
-                plan.highlight
+              className={`relative flex flex-col justify-between rounded-3xl border shadow-xl transition-all duration-300 hover:shadow-2xl ${plan.highlight
                   ? "bg-gradient-to-b from-blue-600 to-blue-500 text-white border-blue-600 scale-105"
                   : "bg-white text-gray-800 hover:scale-105"
-              }`}
+                }`}
             >
               {plan.highlight && (
                 <div className="absolute -top-4 right-4 bg-yellow-400 text-gray-900 font-semibold px-3 py-1 rounded-full text-sm shadow-md">
@@ -371,9 +365,8 @@ export default function Plan({ user }) {
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <CheckIcon
-                        className={`h-6 w-6 flex-shrink-0 ${
-                          plan.highlight ? "text-white" : "text-blue-600"
-                        }`}
+                        className={`h-6 w-6 flex-shrink-0 ${plan.highlight ? "text-white" : "text-blue-600"
+                          }`}
                       />
                       <span>{formatCreditsDisplay(feature, plan.monthlyCredits)}</span>
                     </li>
@@ -381,16 +374,17 @@ export default function Plan({ user }) {
                 </ul>
 
                 <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={loading}
-                  className={`w-full py-3 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                    plan.highlight
-                      ? "bg-white text-blue-600 hover:bg-gray-100"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {loading ? "Processing..." : "Subscribe"}
-                </button>
+  onClick={() => handleSubscribe(plan)}
+  disabled={loadingPlan === plan.name}
+  className={`w-full py-3 rounded-xl font-semibold text-lg transition-all duration-300 ${
+    plan.highlight
+      ? "bg-white text-blue-600 hover:bg-gray-100"
+      : "bg-blue-600 text-white hover:bg-blue-700"
+  } disabled:opacity-50 disabled:cursor-not-allowed`}
+>
+  {loadingPlan === plan.name ? "Processing..." : "Subscribe"}
+</button>
+
               </div>
             </div>
           );

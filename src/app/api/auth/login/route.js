@@ -101,6 +101,8 @@ export async function POST(req) {
         email,
         phone,
         wallet: 1000,
+        freeUsedCount:2,
+
         subscription: {
           status: "inactive",
           plan: "Free",

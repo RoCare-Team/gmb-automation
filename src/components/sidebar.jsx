@@ -30,9 +30,9 @@ import {
   CardContent,
   Grid,
   CircularProgress,
+  Skeleton,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Dashboard as DashboardIcon,
@@ -43,15 +43,18 @@ import {
   Upgrade as UpgradeIcon,
   KeyboardArrowDown as ArrowDownIcon,
   AccountBalanceWallet as WalletIcon,
+  Notifications as NotificationsIcon,
+  Store as StoreIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 
-const drawerWidth = 240;
+const drawerWidth = 260;
 
 const openedMixin = (theme) => ({
   width: drawerWidth,
-  background: '#f9fafb',
+  background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fc 100%)',
+  borderRight: '1px solid rgba(102, 126, 234, 0.1)',
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -65,19 +68,20 @@ const closedMixin = (theme) => ({
     duration: theme.transitions.duration.leavingScreen,
   }),
   overflowX: 'hidden',
-  width: 72,
+  width: 0,
   [theme.breakpoints.up('sm')]: {
-    width: 80,
+    width: 72,
   },
-  background: '#f9fafb',
+  background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fc 100%)',
+  borderRight: '1px solid rgba(102, 126, 234, 0.1)',
 });
 
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'flex-end',
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
+  justifyContent: 'space-between',
+  padding: theme.spacing(0, 2),
+  minHeight: 64,
 }));
 
 const AppBar = styled(MuiAppBar, {
@@ -85,6 +89,7 @@ const AppBar = styled(MuiAppBar, {
 })(({ theme, open }) => ({
   zIndex: theme.zIndex.drawer + 1,
   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
   color: '#fff',
   transition: theme.transitions.create(['width', 'margin'], {
     easing: theme.transitions.easing.sharp,
@@ -93,6 +98,10 @@ const AppBar = styled(MuiAppBar, {
   ...(open && {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
+    [theme.breakpoints.down('sm')]: {
+      marginLeft: 0,
+      width: '100%',
+    },
   }),
 }));
 
@@ -124,11 +133,39 @@ export default function Sidebar({ children, user }) {
   const [upgradeDialogOpen, setUpgradeDialogOpen] = React.useState(false);
   const [userId, setUserId] = React.useState(null);
   const [subscriptionData, setSubscriptionData] = React.useState(null);
-  const [subscriptionLoading, setSubscriptionLoading] = React.useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = React.useState(true);
+  const [userName, setUserName] = React.useState('');
+  const [userEmail, setUserEmail] = React.useState('');
+  const [notificationCount] = React.useState(3);
+  const [initialLoad, setInitialLoad] = React.useState(true);
+
+  // Get user info from props or localStorage
+  React.useEffect(() => {
+    if (user?.name) {
+      setUserName(user.name);
+    } else if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userName') || localStorage.getItem('fullName');
+      if (storedName) {
+        setUserName(storedName);
+      }
+    }
+
+    if (user?.email) {
+      setUserEmail(user.email);
+    } else if (typeof window !== 'undefined') {
+      const storedEmail = localStorage.getItem('userEmail') || localStorage.getItem('email');
+      if (storedEmail) {
+        setUserEmail(storedEmail);
+      }
+    }
+  }, [user]);
 
   // Fetch user subscription details from API
-  const fetchSubscriptionDetails = async () => {
-    setSubscriptionLoading(true);
+  const fetchSubscriptionDetails = async (showLoader = false) => {
+    if (showLoader) {
+      setSubscriptionLoading(true);
+    }
+    
     try {
       const storedUserId = localStorage.getItem('userId');
       if (!storedUserId) {
@@ -146,10 +183,22 @@ export default function Sidebar({ children, user }) {
         const data = await response.json();
         setSubscriptionData(data);
         
+        // Extract user name correctly
+        if (data.fullName) {
+          setUserName(data.fullName);
+          localStorage.setItem('userName', data.fullName);
+        }
+        
+        if (data.email) {
+          setUserEmail(data.email);
+          localStorage.setItem('userEmail', data.email);
+        }
+        
         // Check subscription status
         if (data.subscription && data.subscription.status === 'active') {
-          setUserPlan(data.subscription.plan || 'Premium Plan');
-          localStorage.setItem('Plan', data.subscription.plan || 'Premium Plan');
+          const newPlan = data.subscription.plan || 'Premium Plan';
+          setUserPlan(newPlan);
+          localStorage.setItem('Plan', newPlan);
         } else {
           setUserPlan('Free');
           localStorage.setItem('Plan', 'Free');
@@ -169,7 +218,10 @@ export default function Sidebar({ children, user }) {
       setUserPlan('Free');
       localStorage.setItem('Plan', 'Free');
     } finally {
-      setSubscriptionLoading(false);
+      if (showLoader) {
+        setSubscriptionLoading(false);
+      }
+      setInitialLoad(false);
     }
   };
 
@@ -203,38 +255,56 @@ export default function Sidebar({ children, user }) {
       const storedUserId = localStorage.getItem('userId');
       if (storedUserId) {
         setUserId(storedUserId);
-        fetchSubscriptionDetails();
-        fetchWalletBalance();
-      } else {
+        
+        // Load from localStorage first for instant display
         const storedPlan = localStorage.getItem('Plan');
         if (storedPlan) {
           setUserPlan(storedPlan);
-        } else {
-          setUserPlan('Free');
         }
-
+        
         const storedBalance = localStorage.getItem('walletBalance');
         if (storedBalance) {
           setWalletBalance(parseInt(storedBalance));
         }
+        
+        const storedName = localStorage.getItem('userName') || localStorage.getItem('fullName');
+        if (storedName) {
+          setUserName(storedName);
+        }
+        
+        const storedEmail = localStorage.getItem('userEmail') || localStorage.getItem('email');
+        if (storedEmail) {
+          setUserEmail(storedEmail);
+        }
+        
+        // Then fetch latest data
+        fetchSubscriptionDetails(true);
+        fetchWalletBalance();
+      } else {
+        setSubscriptionLoading(false);
+        setInitialLoad(false);
       }
     }
   }, []);
 
-  // Refresh wallet balance and subscription periodically
+  // Refresh wallet balance and subscription periodically (only wallet, not plan)
   React.useEffect(() => {
     if (userId) {
       const interval = setInterval(() => {
         fetchWalletBalance();
-        fetchSubscriptionDetails();
-      }, 30000);
+      }, 30000); // Only refresh wallet every 30 seconds
 
       return () => clearInterval(interval);
     }
   }, [userId]);
 
-  const handleDrawerOpen = () => setOpen(true);
-  const handleDrawerClose = () => setOpen(false);
+  React.useEffect(() => {
+    if (isMobile) {
+      setOpen(false);
+    }
+  }, [isMobile]);
+
+  const handleDrawerToggle = () => setOpen(!open);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -249,6 +319,8 @@ export default function Sidebar({ children, user }) {
       handleMenuClose();
       router.push('/subscription');
     } else {
+      // Refresh subscription data before opening dialog
+      fetchSubscriptionDetails(true);
       setUpgradeDialogOpen(true);
       handleMenuClose();
     }
@@ -259,7 +331,6 @@ export default function Sidebar({ children, user }) {
   };
 
   const handleWalletClick = () => {
-    // Refresh balance before navigating
     if (userId) {
       fetchWalletBalance();
     }
@@ -284,7 +355,6 @@ export default function Sidebar({ children, user }) {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'POST Managements', icon: <AccountIcon />, path: '/post-management' },
     { text: 'Review Mangements', icon: <PostIcon />, path: '/review-management' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 
   const getPlanConfig = (plan) => {
@@ -296,28 +366,28 @@ export default function Sidebar({ children, user }) {
       case 'pro':
         return {
           label: 'Premium',
-          gradient: 'linear-gradient(to right, #f59e0b, #d97706)',
+          gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
           color: 'white',
         };
       case 'enterprise':
       case 'enterprise plan':
         return {
           label: 'Enterprise',
-          gradient: 'linear-gradient(to right, #8b5cf6, #6d28d9)',
+          gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
           color: 'white',
         };
       case 'standard':
       case 'standard plan':
         return {
           label: 'Standard',
-          gradient: 'linear-gradient(to right, #3b82f6, #2563eb)',
+          gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
           color: 'white',
         };
       case 'free':
       default:
         return {
           label: 'Free',
-          gradient: 'linear-gradient(to right, #6b7280, #4b5563)',
+          gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
           color: 'white',
         };
     }
@@ -328,32 +398,63 @@ export default function Sidebar({ children, user }) {
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <DrawerHeader>
-        <IconButton onClick={handleDrawerClose}>
-          {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+            }}
+          >
+            <StoreIcon sx={{ color: 'white', fontSize: '1.5rem' }} />
+          </Box>
+          {open && (
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.5px',
+              }}
+            >
+              Manager
+            </Typography>
+          )}
+        </Box>
+        {open && (
+          <IconButton onClick={handleDrawerToggle} size="small">
+            {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        )}
       </DrawerHeader>
 
-      <Divider />
+      <Divider sx={{ borderColor: 'rgba(102, 126, 234, 0.1)' }} />
 
-      <List sx={{ flex: 1, overflowY: 'auto' }}>
+      <List sx={{ flex: 1, overflowY: 'auto', px: 1.5, pt: 2 }}>
         {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+          <ListItem key={item.text} disablePadding sx={{ display: 'block', mb: 0.5 }}>
             <ListItemButton
               onClick={() => {
-                if (isMobile) handleDrawerClose();
+                if (isMobile) handleDrawerToggle();
                 if (item.path) router.push(item.path);
               }}
               sx={{
                 minHeight: 48,
                 justifyContent: open ? 'initial' : 'center',
-                px: 2.5,
-                mx: 1,
-                my: 0.5,
+                px: 2,
                 borderRadius: 2,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                  backgroundColor: '#e3f2fd',
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
                   transform: 'translateX(4px)',
-                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.15)',
                 },
               }}
             >
@@ -367,7 +468,16 @@ export default function Sidebar({ children, user }) {
               >
                 {item.icon}
               </ListItemIcon>
-              <ListItemText primary={item.text} sx={{ opacity: open ? 1 : 0 }} />
+              <ListItemText
+                primary={item.text}
+                sx={{
+                  opacity: open ? 1 : 0,
+                  '& .MuiTypography-root': {
+                    fontWeight: 500,
+                    fontSize: '0.95rem',
+                  },
+                }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -383,61 +493,107 @@ export default function Sidebar({ children, user }) {
 
         <AppBar position="fixed" open={open}>
           <Toolbar sx={{ justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {(!open || isMobile) && (
-                <IconButton color="inherit" onClick={handleDrawerOpen} edge="start">
-                  <MenuIcon />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {!open && (
+                <IconButton 
+                  color="inherit" 
+                  onClick={handleDrawerToggle} 
+                  edge="start"
+                  sx={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.2)',
+                    },
+                  }}
+                >
+                  <StoreIcon />
                 </IconButton>
               )}
-              <Typography variant="h6" noWrap sx={{ ml: 2, fontWeight: 700 }}>
-                AI GMB Manager
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700,
+                  display: { xs: 'none', sm: 'block' },
+                }}
+              >
+                AI GMB Auto Management
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {/* Wallet Chip - Click to navigate to wallet page */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+              {/* Notifications Icon */}
+              <IconButton
+                color="inherit"
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.2)',
+                  },
+                }}
+              >
+                <Badge badgeContent={notificationCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+
+              {/* Wallet Chip */}
               <Chip
-                label={`${walletBalance} Coins`}
+                label={isMobile ? `${walletBalance}` : `${walletBalance} Coins`}
                 icon={<WalletIcon sx={{ color: 'white !important' }} />}
                 onClick={handleWalletClick}
                 sx={{
                   fontWeight: 600,
-                  background: 'linear-gradient(to right, #10b981, #059669)',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                   color: 'white',
                   border: 'none',
                   cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  height: { xs: 28, sm: 32 },
                   '&:hover': {
                     opacity: 0.9,
                     transform: 'scale(1.05)',
                     transition: 'all 0.2s',
+                  },
+                  '& .MuiChip-icon': {
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
                   },
                 }}
               />
 
-              {/* Plan Chip - Click to upgrade or view subscription */}
-              <Chip
-                label={subscriptionLoading ? 'Loading...' : (userPlan || 'Free')}
-                icon={
-                  subscriptionLoading ? (
-                    <CircularProgress size={16} sx={{ color: 'white !important' }} />
-                  ) : (
-                    <UpgradeIcon sx={{ color: 'white !important' }} />
-                  )
-                }
-                onClick={handleUpgradeClick}
-                sx={{
-                  fontWeight: 600,
-                  background: planConfig.gradient,
-                  color: planConfig.color,
-                  border: 'none',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    opacity: 0.9,
-                    transform: 'scale(1.05)',
-                    transition: 'all 0.2s',
-                  },
-                }}
-              />
+              {/* Plan Chip */}
+              {initialLoad ? (
+                <Skeleton 
+                  variant="rectangular" 
+                  width={isMobile ? 60 : 100} 
+                  height={isMobile ? 28 : 32}
+                  sx={{ borderRadius: 4 }}
+                />
+              ) : (
+                <Chip
+                  label={isMobile ? planConfig.label.substring(0, 4) : planConfig.label}
+                  icon={<UpgradeIcon sx={{ color: 'white !important' }} />}
+                  onClick={handleUpgradeClick}
+                  sx={{
+                    fontWeight: 600,
+                    background: planConfig.gradient,
+                    color: planConfig.color,
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    height: { xs: 28, sm: 32 },
+                    '&:hover': {
+                      opacity: 0.9,
+                      transform: 'scale(1.05)',
+                      transition: 'all 0.2s',
+                    },
+                    '& .MuiChip-icon': {
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                    },
+                  }}
+                />
+              )}
 
               {/* User Menu */}
               <Box
@@ -449,6 +605,7 @@ export default function Sidebar({ children, user }) {
                   cursor: 'pointer',
                   padding: '4px 8px',
                   borderRadius: '8px',
+                  transition: 'all 0.2s',
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   },
@@ -464,16 +621,30 @@ export default function Sidebar({ children, user }) {
                   }}
                 >
                   <Avatar
-                    alt={user?.name || 'User'}
+                    alt={userName || 'User'}
                     src={user?.image || user?.avatar}
-                    sx={{ width: 36, height: 36 }}
-                  />
+                    sx={{ 
+                      width: { xs: 32, sm: 36 }, 
+                      height: { xs: 32, sm: 36 },
+                      bgcolor: '#667eea',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                  </Avatar>
                 </Badge>
                 {!isMobile && (
                   <>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {user?.name}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                        {userName || 'User'}
+                      </Typography>
+                      {userEmail && (
+                        <Typography variant="caption" sx={{ opacity: 0.9, lineHeight: 1.2 }}>
+                          {userEmail.length > 20 ? userEmail.substring(0, 20) + '...' : userEmail}
+                        </Typography>
+                      )}
+                    </Box>
                     <ArrowDownIcon />
                   </>
                 )}
@@ -490,25 +661,52 @@ export default function Sidebar({ children, user }) {
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           PaperProps={{
-            elevation: 3,
+            elevation: 8,
             sx: {
               mt: 1.5,
-              minWidth: 200,
+              minWidth: 220,
               borderRadius: 2,
+              overflow: 'visible',
+              filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
             },
           }}
         >
           <MenuItem disabled>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {user?.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {user?.email || 'No email'}
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar
+                alt={userName || 'User'}
+                src={user?.image || user?.avatar}
+                sx={{ 
+                  width: 40, 
+                  height: 40,
+                  bgcolor: '#667eea',
+                  fontWeight: 600,
+                }}
+              >
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
+              </Avatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {userName || 'No Name'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {userEmail || 'No email'}
+                </Typography>
+              </Box>
             </Box>
           </MenuItem>
           <Divider />
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              router.push('/profile');
+            }}
+          >
+            <ListItemIcon>
+              <AccountIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Profile</ListItemText>
+          </MenuItem>
           <MenuItem onClick={handleWalletClick}>
             <ListItemIcon>
               <WalletIcon fontSize="small" />
@@ -531,10 +729,7 @@ export default function Sidebar({ children, user }) {
               router.push('/settings');
             }}
           >
-            <ListItemIcon>
-              <SettingsIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Settings</ListItemText>
+            
           </MenuItem>
           <Divider />
           <MenuItem
@@ -555,7 +750,18 @@ export default function Sidebar({ children, user }) {
         </Menu>
 
         {/* Subscription Details Dialog */}
-        <Dialog open={upgradeDialogOpen} onClose={handleUpgradeDialogClose} maxWidth="md" fullWidth>
+        <Dialog
+          open={upgradeDialogOpen}
+          onClose={handleUpgradeDialogClose}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              maxHeight: '90vh',
+            },
+          }}
+        >
           <DialogTitle
             sx={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -565,14 +771,21 @@ export default function Sidebar({ children, user }) {
           >
             Subscription Details
           </DialogTitle>
-          <DialogContent sx={{ mt: 3 }}>
+          <DialogContent sx={{ mt: 3, overflowY: 'auto' }}>
             {subscriptionLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
                 <CircularProgress />
               </Box>
             ) : (
               <>
-                <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)' }}>
+                <Card
+                  sx={{
+                    mb: 3,
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
+                    borderRadius: 2,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  }}
+                >
                   <CardContent>
                     <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
                       Current Plan
@@ -632,7 +845,14 @@ export default function Sidebar({ children, user }) {
                               <Typography variant="body2" color="text.secondary">
                                 Order ID
                               </Typography>
-                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.85rem',
+                                  wordBreak: 'break-all',
+                                }}
+                              >
                                 {subscriptionData.subscription.orderId}
                               </Typography>
                             </Box>
@@ -642,7 +862,14 @@ export default function Sidebar({ children, user }) {
                               <Typography variant="body2" color="text.secondary">
                                 Payment ID
                               </Typography>
-                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.85rem',
+                                  wordBreak: 'break-all',
+                                }}
+                              >
                                 {subscriptionData.subscription.paymentId}
                               </Typography>
                             </Box>
@@ -686,12 +913,12 @@ export default function Sidebar({ children, user }) {
                         router.push('/subscription');
                       }}
                       sx={{
-                        background: 'linear-gradient(to right, #667eea, #764ba2)',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
                         fontWeight: 600,
                         px: 4,
                         '&:hover': {
-                          background: 'linear-gradient(to right, #5568d3, #6941a0)',
+                          background: 'linear-gradient(135deg, #5568d3 0%, #6941a0 100%)',
                         },
                       }}
                     >
@@ -714,9 +941,9 @@ export default function Sidebar({ children, user }) {
                 }}
                 variant="contained"
                 sx={{
-                  background: 'linear-gradient(to right, #667eea, #764ba2)',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   '&:hover': {
-                    background: 'linear-gradient(to right, #5568d3, #6941a0)',
+                    background: 'linear-gradient(135deg, #5568d3 0%, #6941a0 100%)',
                   },
                 }}
               >
@@ -731,9 +958,16 @@ export default function Sidebar({ children, user }) {
           <MuiDrawer
             variant="temporary"
             open={open}
-            onClose={handleDrawerClose}
+            onClose={handleDrawerToggle}
+            ModalProps={{
+              keepMounted: true,
+            }}
             sx={{
-              '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
+              '& .MuiDrawer-paper': {
+                width: drawerWidth,
+                boxSizing: 'border-box',
+                background: 'linear-gradient(180deg, #ffffff 0%, #f8f9fc 100%)',
+              },
             }}
           >
             {drawerContent}
@@ -745,7 +979,7 @@ export default function Sidebar({ children, user }) {
         )}
 
         {/* Main Content */}
-        <Box component="main" sx={{ flexGrow: 1, bgcolor: '#f5f6fa' }}>
+        <Box component="main" sx={{ flexGrow: 1, bgcolor: '#f5f6fa', minHeight: '100vh' }}>
           <DrawerHeader />
           {children}
         </Box>

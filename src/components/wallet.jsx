@@ -2,195 +2,450 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, Coins, IndianRupee, ArrowRight, Sparkles, CheckCircle } from "lucide-react";
+import {
+  Wallet,
+  Coins,
+  IndianRupee,
+  ArrowRight,
+  Sparkles,
+  CheckCircle,
+  CreditCard,
+  Zap,
+  TrendingUp,
+  Shield,
+  ArrowLeft,
+} from "lucide-react";
 
 export default function SmartWalletRecharge() {
   const [userId, setUserId] = useState("");
-  const [amount, setAmount] = useState(199);
+  const [amount, setAmount] = useState(499);
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
 
-  // 🧠 Coin calculation formula
-  const coins = Math.floor((amount / 199) * 2000);
+  // 1 Rupee = 1 Coin
+  const coins = amount;
 
-  // 🧩 Preset options
+  // 💰 Predefined recharge options
   const presetAmounts = [
-    { price: 199, coins: 2000 },
-    { price: 499, coins: 5200 },
-    { price: 999, coins: 11000 },
-    { price: 1999, coins: 23000 },
+    { price: 199, coins: 199, popular: false },
+    { price: 499, coins: 499, popular: true },
+    { price: 999, coins: 999, popular: false },
+    { price: 1999, coins: 1999, popular: false },
   ];
 
-  // 🔹 Get userId from localStorage when component mounts
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("userId");
-    if (storedUserId) setUserId(storedUserId);
-  }, []);
+  // 🧩 Load Razorpay SDK dynamically
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
-  // 🧠 Handle Recharge API Call
+  // 🔹 Get userId from localStorage
+// 🔹 Get userId from localStorage
+useEffect(() => {
+  const storedUserId = localStorage.getItem("userId");
+  if (storedUserId) setUserId(storedUserId);
+}, []);
+
+
+
+  // 💰 Handle Recharge Payment
   const handleRecharge = async () => {
     if (!userId) {
-      alert("User ID not found. Please log in again.");
+      alert("User not found. Please log in again.");
       return;
     }
-    if (amount < 199) {
-      alert("Minimum recharge is ₹199");
+    if (amount < 1) {
+      alert("Minimum recharge is ₹1");
+      return;
+    }
+
+    const res = await loadRazorpayScript();
+    if (!res) {
+      alert("Razorpay SDK failed to load.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const res = await fetch("/api/auth/signup", {
-        method: "PUT",
+      // Create Razorpay order
+      const orderRes = await fetch("/api/subscribe", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          amount: coins, // ✅ Add same coins as displayed
-          type: "add",
+          plan: "WalletRecharge",
+          amount: amount,
         }),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        // ✅ Show success modal instead of alert
-        setShowSuccess(true);
-        // After 2.5 sec, auto redirect back
-        setTimeout(() => {
-          setShowSuccess(false);
-          router.back();
-        }, 2500);
-      } else {
-        alert(`❌ Error: ${data.message || "Something went wrong"}`);
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        alert(orderData.error || "Order creation failed");
+        setLoading(false);
+        return;
       }
+
+      // Razorpay Payment Options
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Auto GMB Wallet",
+        description: `Recharge ₹${amount}`,
+        order_id: orderData.id,
+        theme: { color: "#2563eb" },
+        handler: async (response) => {
+          try {
+            // Verify payment
+            const verifyRes = await fetch("/api/subscribe/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId,
+                plan: "WalletRecharge",
+                payment: response,
+              }),
+            });
+
+            const result = await verifyRes.json();
+            if (!result.success) {
+              alert("Payment verification failed!");
+              setLoading(false);
+              return;
+            }
+
+            // Add coins to wallet
+            const walletRes = await fetch("/api/auth/signup", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId,
+                amount: coins,
+                type: "add",
+              }),
+            });
+
+            const walletData = await walletRes.json();
+            if (walletRes.ok) {
+              setShowSuccess(true);
+              setTimeout(() => {
+                setShowSuccess(false);
+                router.back();
+              }, 2500);
+            } else {
+              alert(walletData.message || "Recharge successful but wallet update failed.");
+            }
+          } catch (err) {
+            console.error("Payment verification error:", err);
+            alert("Verification failed!");
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: "Auto GMB User",
+          email: "user@example.com",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", () => {
+        alert("Payment failed!");
+        setLoading(false);
+      });
+      rzp.open();
     } catch (err) {
-      console.error("Recharge Error:", err);
-      alert("⚠️ Server error. Please try again later.");
-    } finally {
+      console.error("Recharge error:", err);
+      alert("Something went wrong!");
       setLoading(false);
     }
   };
 
+  // ✅ Fix: Reset loading state on mount
+useEffect(() => {
+  setLoading(false);
+  setShowSuccess(false);
+}, []);
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-amber-100 flex justify-center items-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-amber-200 p-6 space-y-6"
-      >
-        {/* Header */}
-        <div className="flex flex-col items-center space-y-3">
-          <Wallet className="text-amber-600 w-12 h-12" />
-          <h1 className="text-3xl font-bold text-gray-800">Smart Wallet</h1>
-          <p className="text-gray-500 text-sm text-center">
-            Add money to get coins instantly.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
 
-        {/* Quick Recharge */}
-        <div>
-          <h2 className="font-semibold text-gray-700 mb-2">Quick Recharge</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {presetAmounts.map((pkg, i) => (
-              <motion.button
-                key={i}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setAmount(pkg.price)}
-                className={`border-2 rounded-xl py-3 flex flex-col items-center space-y-1 transition-all ${
-                  amount === pkg.price
-                    ? "bg-amber-600 text-white border-amber-600"
-                    : "border-amber-300 text-gray-700 hover:border-amber-500"
-                }`}
-              >
-                <span className="font-bold text-lg">₹{pkg.price}</span>
-                <span className="text-sm">{pkg.coins} Coins</span>
-              </motion.button>
-            ))}
-          </div>
-        </div>
-
-        {/* Custom Input */}
-        <div>
-          <label className="block text-gray-700 font-medium mb-2">
-            Or enter custom amount
-          </label>
-          <input
-            type="number"
-            min="199"
-            value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-800"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            ₹199 = 2000 coins (auto-calculated)
-          </p>
-        </div>
-
-        {/* Coin Info */}
-        <motion.div
-          key={coins}
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="flex justify-between items-center bg-amber-50 border border-amber-200 rounded-xl p-4"
-        >
-          <div className="flex items-center space-x-2">
-            <Sparkles className="text-amber-600" />
-            <span className="font-semibold text-gray-700">You’ll Get</span>
-          </div>
-          <div className="text-amber-700 font-bold text-lg">{coins} Coins</div>
-        </motion.div>
-
-        {/* Recharge Button */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
+        {/* Back Button */}
         <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleRecharge}
-          disabled={loading}
-          className={`w-full flex justify-center items-center space-x-2 py-3 rounded-2xl shadow-md font-semibold text-white transition-all ${
-            loading ? "bg-gray-400" : "bg-amber-600 hover:bg-amber-700"
-          }`}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-700 hover:text-indigo-600 transition-colors mb-6 group"
         >
-          <IndianRupee className="w-5 h-5" />
-          <span>{loading ? "Processing..." : "Recharge Now"}</span>
-          {!loading && <ArrowRight className="w-5 h-5" />}
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Back to Dashboard</span>
         </motion.button>
-      </motion.div>
 
-      {/* ✅ Success Popup Modal */}
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          {/* Left Side - Info Card */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
+          >
+            {/* Main Header */}
+            <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Wallet className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Wallet Recharge
+                  </h1>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Power up your account instantly
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                  <Zap className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Instant Credit</h3>
+                    <p className="text-sm text-gray-600">Coins added to your wallet immediately after payment</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                  <Shield className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Secure Payment</h3>
+                    <p className="text-sm text-gray-600">Protected by Razorpay's enterprise-grade security</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                  <TrendingUp className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">1:1 Conversion</h3>
+                    <p className="text-sm text-gray-600">Every rupee equals one coin - simple and transparent</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right Side - Recharge Form */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8 space-y-6"
+          >
+            {/* Quick Recharge Options */}
+            <div>
+              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-600" />
+                Popular Amounts
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {presetAmounts.map((pkg, i) => (
+                  <motion.button
+                    key={i}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setAmount(pkg.price)}
+                    className={`relative border-2 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${
+                      amount === pkg.price
+                        ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white border-indigo-600 shadow-lg"
+                        : "border-gray-200 text-gray-700 hover:border-indigo-300 hover:shadow-md bg-white"
+                    }`}
+                  >
+                    {pkg.popular && (
+                      <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+                        Popular
+                      </span>
+                    )}
+                    <IndianRupee className={`w-6 h-6 ${amount === pkg.price ? 'text-white' : 'text-indigo-600'}`} />
+                    <span className="font-bold text-2xl">₹{pkg.price}</span>
+                    <span className="text-sm opacity-90">{pkg.coins} Coins</span>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Amount Input */}
+            <div>
+              <label className="block text-gray-800 font-semibold mb-3 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-indigo-600" />
+                Custom Amount
+              </label>
+              <div className="relative">
+                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="number"
+                  min="1"
+                  value={amount}
+                  onChange={(e) => setAmount(Number(e.target.value))}
+                  className="w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 font-medium text-lg bg-white"
+                  placeholder="Enter amount"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <Coins className="w-3 h-3" />
+                ₹1 = 1 Coin • Minimum recharge: ₹1
+              </p>
+            </div>
+
+            {/* Coin Preview */}
+            <motion.div
+              key={coins}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-200 rounded-2xl p-6"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Coins className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">You'll Receive</p>
+                    <p className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      {coins} Coins
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Recharge Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleRecharge}
+              disabled={loading}
+              className={`w-full flex justify-center items-center gap-3 py-4 rounded-2xl shadow-lg font-bold text-white text-lg transition-all ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-xl"
+              }`}
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing Payment...</span>
+                </>
+              ) : (
+                <>
+                  <IndianRupee className="w-6 h-6" />
+                  <span>Recharge ₹{amount}</span>
+                  <ArrowRight className="w-6 h-6" />
+                </>
+              )}
+            </motion.button>
+
+            <p className="text-xs text-center text-gray-500">
+              By proceeding, you agree to our terms and conditions
+            </p>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Success Modal */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-3xl shadow-2xl p-8 text-center w-[90%] max-w-sm border border-amber-200"
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-white rounded-3xl shadow-2xl p-8 text-center w-full max-w-md"
             >
-              <CheckCircle className="text-green-500 w-16 h-16 mx-auto mb-3" />
-              <h2 className="text-xl font-bold text-gray-800">Transaction Successful 🎉</h2>
-              <p className="text-gray-600 mt-2">
-                You’ve added <b>₹{amount}</b> and earned <b>{coins} coins</b>.
-              </p>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+              >
+                <CheckCircle className="w-12 h-12 text-white" />
+              </motion.div>
+              
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-2xl font-bold text-gray-800 mb-3"
+              >
+                Payment Successful! 🎉
+              </motion.h2>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-4 mb-6"
+              >
+                <p className="text-gray-600 mb-2">Recharge Amount</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  ₹{amount}
+                </p>
+                <div className="flex items-center justify-center gap-2 mt-3 text-green-600">
+                  <Coins className="w-5 h-5" />
+                  <span className="font-semibold">{coins} Coins Added</span>
+                </div>
+              </motion.div>
+              
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-                className="mt-4 text-sm text-gray-500"
+                transition={{ delay: 0.6 }}
+                className="flex items-center justify-center gap-2 text-gray-500 text-sm"
               >
-                Redirecting back...
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                Redirecting to dashboard...
               </motion.div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
