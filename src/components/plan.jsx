@@ -159,10 +159,10 @@ const handleSubscribe = async (plan) => {
     }
 
     const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      key: process.env.RAZORPAY_KEY_ID,
       amount: orderData.amount,
       currency: orderData.currency,
-      name: "Auto GMB",
+      name: "Limbu AI",
       description: `${plan.name} - ${getDuration()}`,
       order_id: orderData.id,
       handler: async (response) => {

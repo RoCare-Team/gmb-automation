@@ -95,10 +95,10 @@ useEffect(() => {
 
       // Razorpay Payment Options
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: process.env.RAZORPAY_KEY_ID,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "Auto GMB Wallet",
+        name: "Limbu AI  Wallet",
         description: `Recharge ₹${amount}`,
         order_id: orderData.id,
         theme: { color: "#2563eb" },
