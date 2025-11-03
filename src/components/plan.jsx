@@ -15,7 +15,7 @@ export default function Plan({ user }) {
   const basePlans = [
     {
       name: "Basic Plan",
-      monthlyPrice: 1,
+      monthlyPrice: 999,
       monthlyCredits: 1000,
       description: "Perfect for small businesses starting with automation.",
       features: [
