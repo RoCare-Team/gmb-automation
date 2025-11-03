@@ -111,6 +111,7 @@ export default function LimbuAILanding() {
             Save hours every week with intelligent automation.
           </p>
 
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <Link href="/login">
             <button className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-blue-300/50 transition-all hover:scale-105 flex items-center gap-2">
@@ -118,9 +119,7 @@ export default function LimbuAILanding() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             </Link>
-            <button className="px-8 py-4 bg-white border-2 border-blue-200 text-blue-600 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all">
-              Watch Demo
-            </button>
+          
           </div>
 
 
