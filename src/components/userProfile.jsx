@@ -94,6 +94,7 @@ export default function ProfilePage() {
 }
 
 function InfoRow({ label, value }) {
+  
   return (
     <div className="flex justify-between items-center bg-gray-100 rounded-lg px-4 py-3">
       <span className="font-medium text-gray-600">{label}</span>
