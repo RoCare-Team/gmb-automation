@@ -485,6 +485,7 @@ export default function Sidebar({ children, user }) {
     </Box>
   );
 
+  
   return (
     <>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
