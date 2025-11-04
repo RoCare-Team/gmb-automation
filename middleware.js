@@ -5,7 +5,7 @@ export async function middleware(req) {
   return NextResponse.next();
 }
 
-// Optional: you can even remove matcher if you want it to apply on all routes
+// ✅ Apply middleware to these routes
 export const config = {
-  matcher: ["/:path*"], // runs for all routes, but just passes through
+  matcher: ["/admin/:path*", "/adminLogin/:path*"],
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -14,6 +14,15 @@ import {
   Star,
   Building2,
   Plus,
+  TrendingUp,
+  Eye,
+  MousePointer,
+  Navigation,
+  BarChart3,
+  X,
+  Calendar,
+  Search,
+  Hash,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,8 +44,7 @@ export async function fetchGMBAccounts(accessToken) {
     return data.accounts || [];
   } catch (err) {
     console.error("Fetch Accounts Error:", err);
-    toast.error("Error fetching GMB accounts!");
-    return [];
+    throw err;
   }
 }
 
@@ -70,7 +78,7 @@ export async function fetchAllLocationsByAccount(accessToken, accountId) {
     return allLocations;
   } catch (err) {
     console.error(`Error fetching locations for account ${accountId}:`, err);
-    return [];
+    throw err;
   }
 }
 
@@ -82,16 +90,363 @@ export async function checkVoiceOfMerchant(accessToken, locationName) {
     );
 
     if (!res.ok) {
-      console.error(`Failed to check VoM for ${locationName}`);
       return { hasVoiceOfMerchant: false, hasBusinessAuthority: false };
     }
 
     const data = await res.json();
     return data;
   } catch (err) {
-    console.error(`Error checking VoM for ${locationName}:`, err);
     return { hasVoiceOfMerchant: false, hasBusinessAuthority: false };
   }
+}
+
+// --- Fetch Insights API ---
+export async function fetchLocationInsights(accessToken, locationId, startDate, endDate) {
+  try {
+    const url = `https://businessprofileperformance.googleapis.com/v1/locations/${locationId}:fetchMultiDailyMetricsTimeSeries?dailyRange.startDate.year=${startDate.getFullYear()}&dailyRange.startDate.month=${startDate.getMonth() + 1}&dailyRange.startDate.day=${startDate.getDate()}&dailyRange.endDate.year=${endDate.getFullYear()}&dailyRange.endDate.month=${endDate.getMonth() + 1}&dailyRange.endDate.day=${endDate.getDate()}&dailyMetrics=BUSINESS_DIRECTION_REQUESTS&dailyMetrics=CALL_CLICKS&dailyMetrics=WEBSITE_CLICKS&dailyMetrics=BUSINESS_IMPRESSIONS_MOBILE_MAPS&dailyMetrics=BUSINESS_IMPRESSIONS_MOBILE_SEARCH`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Failed to fetch insights: ${errText}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Fetch Insights Error:", err);
+    throw err;
+  }
+}
+
+// --- Fetch Search Keywords API ---
+export async function fetchSearchKeywords(accessToken, locationId, startMonth, endMonth) {
+  try {
+    const url = `https://businessprofileperformance.googleapis.com/v1/locations/${locationId}/searchkeywords/impressions/monthly?monthlyRange.start_month.year=${startMonth.year}&monthlyRange.start_month.month=${startMonth.month}&monthlyRange.end_month.year=${endMonth.year}&monthlyRange.end_month.month=${endMonth.month}`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Failed to fetch search keywords: ${errText}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Fetch Search Keywords Error:", err);
+    throw err;
+  }
+}
+
+// --- Insights Modal Component ---
+function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, startDate, endDate, onDateChange, searchKeywords, searchKeywordsLoading }) {
+  if (!isOpen) return null;
+
+  const calculateTotal = (metricData) => {
+    if (!metricData || !metricData.timeSeries || !metricData.timeSeries.datedValues) {
+      return 0;
+    }
+    return metricData.timeSeries.datedValues.reduce((sum, item) => {
+      const value = typeof item.value === 'string' ? parseInt(item.value, 10) : (item.value || 0);
+      return sum + (isNaN(value) ? 0 : value);
+    }, 0);
+  };
+
+  const getMetricByType = (type) => {
+    if (!insights || !insights.multiDailyMetricTimeSeries) return null;
+    
+    if (insights.multiDailyMetricTimeSeries[0]?.dailyMetricTimeSeries) {
+      const series = insights.multiDailyMetricTimeSeries[0].dailyMetricTimeSeries.find(
+        m => m.dailyMetric === type
+      );
+      return series;
+    } else {
+      return insights.multiDailyMetricTimeSeries.find(m => m.dailyMetric === type);
+    }
+  };
+
+  const directionRequests = getMetricByType("BUSINESS_DIRECTION_REQUESTS");
+  const callClicks = getMetricByType("CALL_CLICKS");
+  const websiteClicks = getMetricByType("WEBSITE_CLICKS");
+  const mapsImpressions = getMetricByType("BUSINESS_IMPRESSIONS_MOBILE_MAPS");
+  const searchImpressions = getMetricByType("BUSINESS_IMPRESSIONS_MOBILE_SEARCH");
+
+  const totalDirections = calculateTotal(directionRequests);
+  const totalCalls = calculateTotal(callClicks);
+  const totalWebsiteClicks = calculateTotal(websiteClicks);
+  const totalMapsImpressions = calculateTotal(mapsImpressions);
+  const totalSearchImpressions = calculateTotal(searchImpressions);
+  const totalImpressions = totalMapsImpressions + totalSearchImpressions;
+
+  const formatDate = (date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const getDaysDifference = () => {
+    const diffTime = Math.abs(endDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Process search keywords data
+  const topKeywords = searchKeywords?.searchKeywordsCounts 
+    ? searchKeywords.searchKeywordsCounts
+        .sort((a, b) => {
+          const aValue = a.insightsValue?.value || 0;
+          const bValue = b.insightsValue?.value || 0;
+          return bValue - aValue;
+        })
+        .slice(0, 10)
+    : [];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn ml-20 mt-20">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-5 flex justify-between items-center rounded-t-2xl flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-6 h-6" />
+            <div>
+              <h2 className="text-xl font-bold">Performance Insights</h2>
+              <p className="text-sm text-blue-100">{listingTitle}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="hover:bg-white/20 p-2 rounded-lg transition"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content - Scrollable */}
+        <div className="p-6 overflow-y-auto flex-1">
+          {/* Date Range Selector */}
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-5 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-bold text-gray-900">Select Date Range</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={formatDate(startDate)}
+                  onChange={(e) => onDateChange(new Date(e.target.value), endDate)}
+                  max={formatDate(endDate)}
+                  className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={formatDate(endDate)}
+                  onChange={(e) => onDateChange(startDate, new Date(e.target.value))}
+                  min={formatDate(startDate)}
+                  max={formatDate(new Date())}
+                  className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+              <AlertCircle className="w-4 h-4" />
+              <span>Showing data for {getDaysDifference()} days</span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <CircularProgress size={50} thickness={4} sx={{ color: "#3b82f6" }} />
+              <p className="text-gray-600 mt-4 font-semibold">Loading insights...</p>
+            </div>
+          ) : insights && insights.multiDailyMetricTimeSeries ? (
+            <>
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Total Impressions */}
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-5 hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-purple-600 p-3 rounded-lg">
+                      <Eye className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-3xl font-bold text-purple-700">{totalImpressions.toLocaleString()}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Total Impressions</h3>
+                  <div className="flex gap-2 text-xs text-gray-600">
+                    <span>Maps: {totalMapsImpressions.toLocaleString()}</span>
+                    <span>•</span>
+                    <span>Search: {totalSearchImpressions.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Website Clicks */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-blue-600 p-3 rounded-lg">
+                      <MousePointer className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-3xl font-bold text-blue-700">{totalWebsiteClicks.toLocaleString()}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Website Clicks</h3>
+                  <p className="text-xs text-gray-600">Users visited your website</p>
+                </div>
+
+                {/* Call Clicks */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-5 hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-green-600 p-3 rounded-lg">
+                      <Phone className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-3xl font-bold text-green-700">{totalCalls.toLocaleString()}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Call Clicks</h3>
+                  <p className="text-xs text-gray-600">Users clicked to call</p>
+                </div>
+
+                {/* Direction Requests */}
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-5 hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-orange-600 p-3 rounded-lg">
+                      <Navigation className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-3xl font-bold text-orange-700">{totalDirections.toLocaleString()}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Direction Requests</h3>
+                  <p className="text-xs text-gray-600">Users requested directions</p>
+                </div>
+              </div>
+
+              {/* Engagement Summary */}
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                  Engagement Summary
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-700">{totalImpressions.toLocaleString()}</div>
+                    <div className="text-xs text-gray-600 mt-1">Total Views</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-700">
+{totalImpressions > 0
+  ? (((totalWebsiteClicks + totalCalls + totalDirections) / totalImpressions) * 100).toFixed(2) + "%"
+  : "0%"}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">Click Rate</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-700">
+                      {(totalWebsiteClicks + totalCalls + totalDirections).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">Total Actions</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-indigo-700">{getDaysDifference()}</div>
+                    <div className="text-xs text-gray-600 mt-1">Days</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Keywords Section */}
+             <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-200 rounded-xl p-6 mb-6">
+  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <Search className="w-5 h-5 text-cyan-600" />
+    Top Search Keywords
+  </h3>
+
+  {searchKeywordsLoading ? (
+    <div className="flex items-center justify-center py-8">
+      <CircularProgress size={40} thickness={4} sx={{ color: "#0891b2" }} />
+    </div>
+  ) : topKeywords.length > 0 ? (
+    <div className="space-y-3">
+      {topKeywords.map((keyword, idx) => {
+        const value = keyword.insightsValue?.value || 0;
+        const maxValue = topKeywords[0]?.insightsValue?.value || 1;
+        const percentage = (value / maxValue) * 100;
+
+        return (
+          <div key={idx} className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-cyan-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                  {idx + 1}
+                </span>
+                <span className="font-semibold text-gray-900">{keyword.searchKeyword}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Hash className="w-4 h-4 text-cyan-600" />
+                <div className="flex flex-col items-end">
+                  <span className="text-lg font-bold text-cyan-700">{value.toLocaleString()}</span>
+                  <span className="text-xs text-gray-500">Impressions</span>
+                </div>
+              </div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${percentage}%` }}
+              ></div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="text-center py-8">
+      <Search className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+      <p className="text-gray-600">No search keyword data available</p>
+    </div>
+  )}
+</div>
+
+
+              {/* Daily Breakdown */}
+              {callClicks?.timeSeries?.datedValues && (
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Daily Activity</h3>
+                  <div className="max-h-48 overflow-y-auto">
+                    <div className="space-y-2">
+                      {callClicks.timeSeries.datedValues.slice(-10).reverse().map((item, idx) => {
+                        const date = item.date;
+                        const dateStr = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+                        const value = typeof item.value === 'string' ? parseInt(item.value, 10) : (item.value || 0);
+                        
+                        return (
+                          <div key={idx} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                            <span className="text-sm font-medium text-gray-700">{dateStr}</span>
+                            <span className="text-sm font-bold text-blue-600">{value} calls</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">No Insights Available</h3>
+              <p className="text-gray-600">Unable to load performance data for this listing.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // --- Main Dashboard Component ---
@@ -103,64 +458,148 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState({ total: 0, verified: 0, unverified: 0, pending: 0 });
   const [initialFetchDone, setInitialFetchDone] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("all"); // "all", "verified", "unverified"
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [showInsightsModal, setShowInsightsModal] = useState(false);
+  const [insightsData, setInsightsData] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [selectedListingTitle, setSelectedListingTitle] = useState("");
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+  const [noAccountsFound, setNoAccountsFound] = useState(false);
+  const [searchKeywordsData, setSearchKeywordsData] = useState(null);
+  const [searchKeywordsLoading, setSearchKeywordsLoading] = useState(false);
+  
+  // Date range state
+  const [insightsStartDate, setInsightsStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date;
+  });
+  const [insightsEndDate, setInsightsEndDate] = useState(new Date());
 
   const userPlan = session?.user?.plan || "";
   const maxAccounts = userPlan === "" ? 1 : 0;
 
-  // --- Fetch All Accounts & Locations ---
-  const fetchInitialData = async () => {
-    if (!session?.accessToken) return;
+  const fetchInProgress = useRef(false);
+  const dataCache = useRef({});
 
-    setLoading(true);
-    const token = session.accessToken;
+  // Cache key generator
+  const getCacheKey = (email) => `gmb_data_${email}`;
 
-    const accountsData = await fetchGMBAccounts(token);
-    if (accountsData.length === 0) {
-      setAccounts([]);
-      toast.info("No accounts found. Please add your project!");
-      setLoading(false);
+  // Load from cache
+  const loadFromCache = useCallback((email) => {
+    const cacheKey = getCacheKey(email);
+    const cached = dataCache.current[cacheKey];
+    
+    if (cached && cached.timestamp && Date.now() - cached.timestamp < 5 * 60 * 1000) {
+      console.log("Loading from cache:", email);
+      setAccounts(cached.accounts || []);
+      setNoAccountsFound(cached.noAccountsFound || false);
       setInitialFetchDone(true);
+      return true;
+    }
+    return false;
+  }, []);
+
+  // Save to cache
+  const saveToCache = useCallback((email, accountsData, noAccounts) => {
+    const cacheKey = getCacheKey(email);
+    dataCache.current[cacheKey] = {
+      accounts: accountsData,
+      noAccountsFound: noAccounts,
+      timestamp: Date.now()
+    };
+  }, []);
+
+  // --- Fetch All Accounts & Locations ---
+  const fetchInitialData = useCallback(async (forceRefresh = false) => {
+    if (!session?.accessToken || !session?.user?.email) return;
+    
+    const userEmail = session.user.email;
+
+    // Check cache first if not forcing refresh
+    if (!forceRefresh && loadFromCache(userEmail)) {
       return;
     }
 
-    // Fetch ALL locations at once
-    const accountId = accountsData[0].name.replace("accounts/", "");
-    const allLocations = await fetchAllLocationsByAccount(token, accountId);
+    if (fetchInProgress.current && !forceRefresh) {
+      console.log("Fetch already in progress, skipping...");
+      return;
+    }
 
-    if (allLocations.length > 0) {
-      // Check Voice of Merchant for each location
-      const locationsWithVoM = await Promise.all(
-        allLocations.map(async (loc) => {
-          const vomStatus = await checkVoiceOfMerchant(token, loc.name);
-          return {
-            ...loc,
-            accountId,
-            accountName: accountsData[0].accountName || accountsData[0].name,
-            hasVoiceOfMerchant: vomStatus.hasVoiceOfMerchant,
-            hasBusinessAuthority: vomStatus.hasBusinessAuthority,
-          };
-        })
-      );
+    fetchInProgress.current = true;
+    setLoading(true);
+    setNoAccountsFound(false);
+    
+    const token = session.accessToken;
 
-      setAccounts([{ email: session.user.email, listings: locationsWithVoM }]);
-    } else {
-      setAccounts([]);
+    try {
+      console.log("Fetching GMB data for:", userEmail);
+      const accountsData = await fetchGMBAccounts(token);
+      
+      console.log("Accounts fetched:", accountsData.length);
+
+      if (accountsData.length === 0) {
+        setAccounts([]);
+        setNoAccountsFound(true);
+        saveToCache(userEmail, [], true);
+        setInitialFetchDone(true);
+        setLoading(false);
+        fetchInProgress.current = false;
+        return;
+      }
+
+      const accountId = accountsData[0].name.replace("accounts/", "");
+      console.log("Fetching locations for account:", accountId);
+      
+      const allLocations = await fetchAllLocationsByAccount(token, accountId);
+      console.log("Locations fetched:", allLocations.length);
+
+      if (allLocations.length > 0) {
+        const locationsWithVoM = await Promise.all(
+          allLocations.map(async (loc) => {
+            const vomStatus = await checkVoiceOfMerchant(token, loc.name);
+            return {
+              ...loc,
+              accountId,
+              accountName: accountsData[0].accountName || accountsData[0].name,
+              hasVoiceOfMerchant: vomStatus.hasVoiceOfMerchant,
+              hasBusinessAuthority: vomStatus.hasBusinessAuthority,
+            };
+          })
+        );
+
+        const newAccounts = [{ email: userEmail, listings: locationsWithVoM }];
+        setAccounts(newAccounts);
+        setNoAccountsFound(false);
+        saveToCache(userEmail, newAccounts, false);
+        toast.success(`✅ Loaded ${locationsWithVoM.length} listings successfully!`);
+      } else {
+        setAccounts([]);
+        setNoAccountsFound(true);
+        saveToCache(userEmail, [], true);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load listings. Please try again.");
+      setNoAccountsFound(true);
     }
 
     setInitialFetchDone(true);
     setLoading(false);
-  };
+    fetchInProgress.current = false;
+  }, [session?.accessToken, session?.user?.email, loadFromCache, saveToCache]);
 
+  // Initial fetch on session load
   useEffect(() => {
-    if (session && !initialFetchDone) {
-      fetchInitialData();
+    if (session?.user?.email && status === "authenticated") {
+      if (!initialFetchDone && !fetchInProgress.current) {
+        console.log("Initial fetch triggered for:", session.user.email);
+        fetchInitialData();
+      }
     }
-  }, [session, initialFetchDone]);
+  }, [session?.user?.email, status, initialFetchDone, fetchInitialData]);
 
   const handleListingData = (listing) => {
-    console.log("listinglisting", listing);
-    
     const dataToSend = {
       locality: listing?.storefrontAddress?.locality || "",
       website: listing?.websiteUri || "",
@@ -170,6 +609,80 @@ export default function DashboardPage() {
     localStorage.setItem("accountId", listing.accountId);
 
     router.push(`/post-management/${listing.name}`);
+  };
+
+  // --- Handle View Insights with Date Range and Search Keywords ---
+  const handleViewInsights = async (listing, customStartDate = null, customEndDate = null) => {
+    const locationId = listing.name.split("/")[1];
+    
+    setShowInsightsModal(true);
+    setInsightsLoading(true);
+    setSearchKeywordsLoading(true);
+    setInsightsData(null);
+    setSearchKeywordsData(null);
+    setSelectedListingTitle(listing.title || "Unknown Listing");
+    setSelectedLocationId(locationId);
+
+    const startDate = customStartDate || insightsStartDate;
+    const endDate = customEndDate || insightsEndDate;
+
+    try {
+      // Fetch insights
+      const insights = await fetchLocationInsights(session.accessToken, locationId, startDate, endDate);
+      setInsightsData(insights);
+      setInsightsLoading(false);
+
+      // Fetch search keywords for the last 4 months
+      const currentDate = new Date();
+      const startMonth = {
+        year: currentDate.getFullYear(),
+        month: currentDate.getMonth() - 3 // 4 months ago
+      };
+      
+      // Adjust year if month goes negative
+      if (startMonth.month <= 0) {
+        startMonth.month += 12;
+        startMonth.year -= 1;
+      }
+
+      const endMonth = {
+        year: currentDate.getFullYear(),
+        month: currentDate.getMonth() + 1
+      };
+
+      const keywords = await fetchSearchKeywords(session.accessToken, locationId, startMonth, endMonth);
+      setSearchKeywordsData(keywords);
+    } catch (error) {
+      console.error("Error fetching insights:", error);
+      toast.error("Failed to load insights. Please try again.");
+    } finally {
+      setInsightsLoading(false);
+      setSearchKeywordsLoading(false);
+    }
+  };
+
+  // Handle date change in modal
+  const handleDateChange = async (newStartDate, newEndDate) => {
+    setInsightsStartDate(newStartDate);
+    setInsightsEndDate(newEndDate);
+    
+    if (selectedLocationId) {
+      setInsightsLoading(true);
+      try {
+        const insights = await fetchLocationInsights(
+          session.accessToken, 
+          selectedLocationId, 
+          newStartDate, 
+          newEndDate
+        );
+        setInsightsData(insights);
+      } catch (error) {
+        console.error("Error fetching insights:", error);
+        toast.error("Failed to load insights for selected date range.");
+      } finally {
+        setInsightsLoading(false);
+      }
+    }
   };
 
   // --- Summary Update ---
@@ -192,7 +705,7 @@ export default function DashboardPage() {
       const total = allListings.length;
       const verified = allListings.filter((l) => l.hasVoiceOfMerchant === true).length;
       const unverified = allListings.filter((l) => l.hasVoiceOfMerchant === false).length;
-      const pending = 0; // Can be calculated based on other criteria if needed
+      const pending = 0;
       setSummary({ total, verified, unverified, pending });
     }
   }, [accounts]);
@@ -209,7 +722,7 @@ export default function DashboardPage() {
       return;
     }
 
-    await fetchInitialData();
+    await fetchInitialData(true);
   };
 
   // --- Verification Badge ---
@@ -242,11 +755,11 @@ export default function DashboardPage() {
     } else if (filterStatus === "unverified") {
       return listings.filter((l) => l.hasVoiceOfMerchant === false);
     }
-    return listings; // "all"
+    return listings;
   };
 
   // --- Loading State ---
-  if (status === "loading" || (loading && !initialFetchDone)) {
+  if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
         <div className="text-center flex flex-col items-center justify-center">
@@ -257,9 +770,57 @@ export default function DashboardPage() {
     );
   }
 
+  // Unauthenticated state
+if (status === "unauthenticated") {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center text-center px-4">
+      <div className="bg-gradient-to-br from-blue-100 to-purple-100 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-md">
+        <Building2 className="w-12 h-12 text-blue-600" />
+      </div>
+
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
+        Login your Business
+      </h1>
+      <p className="text-gray-700 text-base sm:text-lg mb-8">
+        Connect your business account to manage your Google Business Profile
+      </p>
+
+      <button
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl hover:opacity-90 transition font-semibold shadow-lg flex items-center justify-center gap-2"
+      >
+        <svg
+          className="w-5 h-5"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 488 512"
+          fill="currentColor"
+        >
+          <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.9 0 122.4 24.5 165.2 64.9l-66.8 64.9C318.6 109.9 285.1 96 248 96 150.6 96 72 174.6 72 272s78.6 176 176 176c90.1 0 148.4-51.8 160.3-124.6H248v-99.6h240C487.3 232.8 488 247.5 488 261.8z" />
+        </svg>
+        Sign in with Google
+      </button>
+    </div>
+  );
+}
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-6">
       <Toaster position="top-right" />
+
+      {/* Insights Modal */}
+      <InsightsModal
+        isOpen={showInsightsModal}
+        onClose={() => setShowInsightsModal(false)}
+        insights={insightsData}
+        listingTitle={selectedListingTitle}
+        loading={insightsLoading}
+        startDate={insightsStartDate}
+        endDate={insightsEndDate}
+        onDateChange={handleDateChange}
+        searchKeywords={searchKeywordsData}
+        searchKeywordsLoading={searchKeywordsLoading}
+      />
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b sticky top-0 z-10 backdrop-blur-sm bg-white/95">
@@ -308,8 +869,18 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        {/* Loading State */}
+        {loading && !initialFetchDone && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <CircularProgress size={60} thickness={4} sx={{ color: "#3b82f6" }} />
+              <p className="text-gray-700 font-semibold mt-6">Loading your listings...</p>
+            </div>
+          </div>
+        )}
+
         {/* Summary Cards */}
-        {accounts.length > 0 && (
+        {accounts.length > 0 && !loading && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
             <div 
               onClick={() => setFilterStatus("all")}
@@ -368,28 +939,49 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* No Accounts Found Message */}
+        {noAccountsFound && initialFetchDone && accounts.length === 0 && !loading && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-8 text-center mb-6">
+            <div className="bg-red-100 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-red-600" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No Account Found</h3>
+            <p className="text-gray-700 mb-4 max-w-md mx-auto text-sm sm:text-base">
+              No Google Business Profile found associated with <strong>{session?.user?.email}</strong>
+            </p>
+            <p className="text-gray-600 mb-6 text-sm">
+              Please try logging in with a different Google account that has a Business Profile.
+            </p>
+            <button
+              onClick={() => signOut({ callbackUrl: "/dashboard" })}
+              className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:opacity-90 transition font-semibold shadow-lg"
+            >
+              Switch Account
+            </button>
+          </div>
+        )}
+
         {/* Listings or Empty State */}
-        {accounts.length === 0 && !loading ? (
+        {accounts.length === 0 && !loading && !noAccountsFound && initialFetchDone && (
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-12 text-center">
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 w-16 h-16 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
               <Building2 className="w-8 h-8 sm:w-12 sm:h-12 text-blue-600" />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">No Listings Found</h3>
             <p className="text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base px-4">
-              {initialFetchDone
-                ? "No Google Business Profiles found. Add your project from Google Business Profile Manager."
-                : "Connect your Google Business Profile to get started."}
+              No Google Business Profiles found. Add your project from Google Business Profile Manager.
             </p>
-            {!session && (
-              <button
-                onClick={() => signIn("google", { redirect: false })}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl hover:opacity-90 transition font-semibold shadow-lg text-sm sm:text-base"
-              >
-                Sign in with Google
-              </button>
-            )}
+            <button
+              onClick={handleAddProject}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl hover:opacity-90 transition font-semibold shadow-lg text-sm sm:text-base"
+            >
+              Connect Your Business
+            </button>
           </div>
-        ) : (
+        )}
+
+        {/* Listings Grid */}
+        {accounts.length > 0 && !loading && (
           accounts.map((acc, idx) => {
             const filteredListings = getFilteredListings(acc.listings);
             
@@ -412,71 +1004,81 @@ export default function DashboardPage() {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mt-3 sm:mt-6">
                     {filteredListings.map((listing, i) => (
-                  <div key={i} className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden border border-gray-200">
-                    <div className="p-4 sm:p-6">
-                      {/* Header Section */}
-                      <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 truncate">
-                            {listing.title || listing.name || "Unnamed Listing"}
-                          </h3>
-                          <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Building2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="truncate">{listing.categories?.primaryCategory?.displayName || "Uncategorized"}</span>
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {getVerificationBadge(listing)}
+                      <div key={i} className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden border border-gray-200">
+                        <div className="p-4 sm:p-6">
+                          {/* Header Section */}
+                          <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 truncate">
+                                {listing.title || listing.name || "Unnamed Listing"}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5 sm:gap-2 truncate">
+                                <Building2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                <span className="truncate">{listing.categories?.primaryCategory?.displayName || "Uncategorized"}</span>
+                              </p>
+                            </div>
+                            <div className="flex-shrink-0">
+                              {getVerificationBadge(listing)}
+                            </div>
+                          </div>
+
+                          {/* Business Details */}
+                          <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-2.5 sm:p-3 rounded-lg border border-blue-200">
+                              <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                                <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
+                                <span className="text-xs font-semibold text-gray-700">Phone</span>
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-900 font-medium truncate">{listing.phoneNumbers?.primaryPhone || "N/A"}</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-2.5 sm:p-3 rounded-lg border border-purple-200">
+                              <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                                <Globe className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
+                                <span className="text-xs font-semibold text-gray-700">Website</span>
+                              </div>
+                              <Link
+                                href={listing.websiteUri || "#"}
+                                className="text-xs sm:text-sm text-gray-900 font-medium truncate block hover:underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {listing.websiteUri || "N/A"}
+                              </Link>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-2.5 sm:p-3 rounded-lg border border-green-200">
+                              <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
+                                <span className="text-xs font-semibold text-gray-700">Address</span>
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-900 font-medium line-clamp-2">
+                                {listing.storefrontAddress?.addressLines?.join(", ") || "N/A"}
+                                {listing.storefrontAddress?.locality && `, ${listing.storefrontAddress.locality}`}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <button
+                              onClick={() => handleListingData(listing)}
+                              className="flex-1 min-w-[140px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg sm:rounded-xl hover:opacity-90 transition text-xs sm:text-sm font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 sm:gap-2"
+                            >
+                              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              Manage Listing
+                            </button>
+
+                            <button
+                              onClick={() => handleViewInsights(listing)}
+                              className="flex-1 min-w-[140px] px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg sm:rounded-xl hover:opacity-90 transition text-xs sm:text-sm font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 sm:gap-2"
+                            >
+                              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              View Insights
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Business Details */}
-                      <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-2.5 sm:p-3 rounded-lg border border-blue-200">
-                          <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                            <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                            <span className="text-xs font-semibold text-gray-700">Phone</span>
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-900 font-medium truncate">{listing.phoneNumbers?.primaryPhone || "N/A"}</p>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-2.5 sm:p-3 rounded-lg border border-purple-200">
-                          <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                            <Globe className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
-                            <span className="text-xs font-semibold text-gray-700">Website</span>
-                          </div>
-                          <Link
-                            href={listing.websiteUri || "#"}
-                            className="text-xs sm:text-sm text-gray-900 font-medium truncate block hover:underline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {listing.websiteUri || "N/A"}
-                          </Link>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-green-50 to-green-100/50 p-2.5 sm:p-3 rounded-lg border border-green-200">
-                          <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
-                            <span className="text-xs font-semibold text-gray-700">Address</span>
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-900 font-medium line-clamp-2">
-                            {listing.storefrontAddress?.addressLines?.join(", ") || "N/A"}
-                            {listing.storefrontAddress?.locality && `, ${listing.storefrontAddress.locality}`}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <button
-                        onClick={() => handleListingData(listing)}
-                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg sm:rounded-xl hover:opacity-90 transition text-xs sm:text-sm font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-1.5 sm:gap-2"
-                      >
-                        <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        Manage This Listing
-                      </button>
-                    </div>
-                  </div>
                     ))}
                   </div>
                 )}

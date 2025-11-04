@@ -356,6 +356,7 @@ export default function Sidebar({ children, user }) {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'POST Managements', icon: <AccountIcon />, path: '/post-management' },
     { text: 'Review Mangements', icon: <PostIcon />, path: '/review-management' },
+    { text: 'Manage your Plan', icon: <UpgradeIcon />, path: '/subscription' },
   ];
 
   const getPlanConfig = (plan) => {
@@ -573,7 +574,7 @@ export default function Sidebar({ children, user }) {
                 />
               ) : (
                 <Chip
-                  label={isMobile ? planConfig.label.substring(0, 4) : planConfig.label}
+                  label={userPlan ? userPlan: "Free"}
                   icon={<UpgradeIcon sx={{ color: 'white !important' }} />}
                   onClick={handleUpgradeClick}
                   sx={{
@@ -582,7 +583,7 @@ export default function Sidebar({ children, user }) {
                     color: planConfig.color,
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                    boxShadow: '0 2px 8px rgba(80, 44, 223, 0.2)',
                     fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     height: { xs: 28, sm: 32 },
                     '&:hover': {
