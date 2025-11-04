@@ -32,6 +32,7 @@ import {
   CircularProgress,
   Skeleton,
 } from '@mui/material';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -540,11 +541,11 @@ export default function Sidebar({ children, user }) {
               {/* Wallet Chip */}
               <Chip
                 label={isMobile ? `${walletBalance}` : `${walletBalance} Coins`}
-                icon={<WalletIcon sx={{ color: 'white !important' }} />}
+                icon={<AddCircleOutlineIcon sx={{ color: 'white !important' }} />}
                 onClick={handleWalletClick}
                 sx={{
                   fontWeight: 600,
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #510de3ff 0%, #101075ff 100%)',
                   color: 'white',
                   border: 'none',
                   cursor: 'pointer',
