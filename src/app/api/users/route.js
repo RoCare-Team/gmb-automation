@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
+// 🧩 Schema Definition
 const UserSchema = new mongoose.Schema({
   userId: String,
   email: String,
@@ -19,6 +20,7 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.models.users || mongoose.model("users", UserSchema);
 
+// 🔗 MongoDB Connection
 async function connectDB() {
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(MONGODB_URI, {
@@ -43,22 +45,27 @@ export async function GET() {
   }
 }
 
-// ✅ POST: Fetch dashboard stats + monthly growth
+// ✅ POST: Dashboard stats + monthly growth
+// ✅ POST: Dashboard stats + monthly growth + plan breakdown + total revenue
 export async function POST(req) {
   try {
     await connectDB();
     const users = await User.find({});
 
     const totalUsers = users.length;
+
+    // Active/inactive counts
     const activeUsers = users.filter(
       (u) => u.subscription?.status === "active"
     ).length;
     const inactiveUsers = totalUsers - activeUsers;
 
+    // Latest signup
     const latestUser = users.sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     )[0];
 
+    // 📊 Monthly user growth
     const monthlyData = Array(12).fill(0);
     users.forEach((user) => {
       if (user.createdAt) {
@@ -68,24 +75,34 @@ export async function POST(req) {
     });
 
     const monthLabels = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
 
     const userGrowth = monthLabels.map((m, i) => ({
       month: m,
       users: monthlyData[i],
     }));
+
+    // 💳 Plan breakdown
+    const planCounts = {
+      basic: users.filter((u) => u.subscription?.plan?.toLowerCase() === "basic").length,
+      standard: users.filter((u) => u.subscription?.plan?.toLowerCase() === "standard").length,
+      premium: users.filter((u) => u.subscription?.plan?.toLowerCase() === "premium").length,
+    };
+
+    // 💰 Calculate total revenue (assuming you have revenue info)
+    // If each plan has a fixed price, you can define them here:
+    const PLAN_PRICES = {
+      basic: 499,
+      standard: 999,
+      premium: 1999,
+    };
+
+    const totalRevenue =
+      planCounts.basic * PLAN_PRICES.basic +
+      planCounts.standard * PLAN_PRICES.standard +
+      planCounts.premium * PLAN_PRICES.premium;
 
     return NextResponse.json({
       success: true,
@@ -94,6 +111,8 @@ export async function POST(req) {
         activeUsers,
         inactiveUsers,
         latestSignup: latestUser?.createdAt || null,
+        totalRevenue,
+        planCounts,
       },
       userGrowth,
     });
@@ -105,6 +124,7 @@ export async function POST(req) {
     );
   }
 }
+
 
 // ✅ PUT: Update user's subscription plan
 export async function PUT(req) {
@@ -143,6 +163,39 @@ export async function PUT(req) {
     });
   } catch (error) {
     console.error("Error updating user plan:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// ✅ DELETE: Remove user by userId
+export async function DELETE(req) {
+  try {
+    await connectDB();
+
+    const { userId } = await req.json();
+    if (!userId)
+      return NextResponse.json(
+        { success: false, error: "Missing userId" },
+        { status: 400 }
+      );
+
+    const deletedUser = await User.findOneAndDelete({ userId });
+
+    if (!deletedUser)
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+
+    return NextResponse.json({
+      success: true,
+      message: `User with ID ${userId} deleted successfully`,
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

@@ -21,6 +21,7 @@ import {
   CheckSquare,
 } from "lucide-react";
 import { AnimatePresence,motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 // Toast Component
 const Toast = ({ message, type = "success" }) => (
@@ -507,6 +508,7 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
 
 // Main Component
 export default function PostManagement() {
+  const {data:session} = useSession()
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
   const [countdown, setCountdown] = useState(0);
@@ -526,6 +528,8 @@ export default function PostManagement() {
     const [locations, setLocations] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [aiGenerateImage,setAiGenerateImage] = useState()
+    const [aiGenerateDescription,setAiGenerateDescription] = useState()
 
 
 
@@ -683,6 +687,8 @@ export default function PostManagement() {
   const description = data.description;
 
   setAiResponse(data);
+  setAiGenerateImage(aiOutput)
+  setAiGenerateDescription(description)
 
   // Save post in MongoDB
   const postRes = await fetch("/api/post-status", {
@@ -840,18 +846,18 @@ export default function PostManagement() {
     }
   };
 
-const handlePost = async (post) => {
-    if (selectedLocations.length === 0) {
-      alert("Please select at least one location.");
-      return;
-    }
+const handlePost = async () => {
+  if (selectedLocations.length === 0) {
+    alert("Please select at least one location.");
+    return;
+  }
 
-    setIsPosting(true);
+  setIsPosting(true);
 
-    try {
-            const userId = localStorage.getItem("userId");
-
-       const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+  try {
+    
+    const userId = localStorage.getItem("userId");
+    const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
     if (!userRes.ok) {
       showToast("Failed to fetch user data", "error");
       return;
@@ -862,56 +868,88 @@ const handlePost = async (post) => {
     const walletBalance = userData.wallet || 0;
     setUserWallet(walletBalance);
 
-     // ✅ If user is on Free Plan
-    if (subscription.plan === "Free" || subscription.status !== "active" && walletBalance < 350) {
-        // ⛔ Already used 2 free generations
-        showToast("You have used your 2 free AI generations. Please upgrade your plan.", "error");
-        setShowUpgradePlan(true);
-        return;
-      
-    } else {
-      // ✅ Paid Plan: Check wallet balance
-      if (walletBalance < 350) {
-        setShowInsufficientBalance(true);
-        return;
-      }
+    // Determine plan type and deduction per location
+    const isFreePlan = subscription.plan === "Free";
+    const perLocationDeduct = isFreePlan ? 100 : 50;
+    const totalDeduct = perLocationDeduct * selectedLocations.length;
+
+    // Check wallet balance
+    if (isFreePlan && walletBalance < totalDeduct) {
+      showToast("Insufficient wallet balance. Please upgrade your plan.", "error");
+      setShowUpgradePlan(true);
+      return;
     }
-      const payloadDetails = JSON.parse(localStorage.getItem("listingData")) || {};
 
-      const locationData = selectedLocations.map((loc) => ({
-        city: loc.locationId,
-        cityName: loc.locality,
-        bookUrl: payloadDetails.website || "",
-      }));
+    if (!isFreePlan && walletBalance < totalDeduct) {
+      showToast("Insufficient wallet balance. Please recharge your wallet.", "error");
+      setShowRechargeModal(true);
+      return;
+    }
 
-      const response = await fetch(
-        "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            locationData,
-            account: selectedLocations[0]?.accountId || "",
-            output: post?.aiOutput || "",
-            description: post?.description || "",
-            accessToken: session?.accessToken || "",
-          }),
-        }
-      );
+    const payloadDetails = JSON.parse(localStorage.getItem("listingData")) || {};
 
-      const data = await response.json();
-      console.log("Webhook response:", data);
-      setIsPosting(false);
+    // Prepare location data for webhook
+    const locationData = selectedLocations.map((loc) => ({
+      city: loc.locationId,
+      cityName: loc.locality,
+      bookUrl: payloadDetails.website || "",
+    }));
+
+    // Send to webhook
+    const response = await fetch(
+      "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locationData,
+          account: selectedLocations[0]?.accountId || "",
+          output: aiGenerateImage || "",
+          description: aiGenerateDescription || "",
+          accessToken: session?.accessToken || "",
+        }),
+      }
+    );
+
+    const data = await response.json();
+    console.log("Webhook response:", data);
+
+    if (response.ok) {
+      // Deduct coins after successful post
+      const walletRes = await fetch("/api/auth/signup", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          amount: totalDeduct,
+          type: "deduct",
+        }),
+      });
+
+      if (walletRes.ok) {
+        const newBalance = walletBalance - totalDeduct;
+        setUserWallet(newBalance);
+        localStorage.setItem("walletBalance", newBalance);
+        showToast(`${totalDeduct} coins deducted from your wallet`, "info");
+      } else {
+        showToast("Post sent, but wallet deduction failed", "warning");
+      }
+
       setShowSuccess(true);
       setIsModalOpen(false);
       setSelectedLocations([]);
-    } catch (error) {
-      console.error("Post error:", error);
-      alert("Failed to send post.");
-    } finally {
-      setIsPosting(false);
+    } else {
+      showToast("Failed to send post.", "error");
     }
-  };
+
+  } catch (error) {
+    console.error("Post error:", error);
+    alert("Failed to send post.");
+  } finally {
+    setIsPosting(false);
+  }
+};
+
 
 
   const handleReject = async (id) => {
@@ -1036,7 +1074,7 @@ const handlePost = async (post) => {
     loc.locality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-    const allSelected = selectedLocations.length === filteredLocations.length && filteredLocations.length > 0;
+  const allSelected = selectedLocations.length === filteredLocations.length && filteredLocations.length > 0;
 
 
   return (
@@ -1466,7 +1504,7 @@ const handlePost = async (post) => {
               <motion.button
                 whileHover={{ scale: isPosting ? 1 : 1.05 }}
                 whileTap={{ scale: isPosting ? 1 : 0.95 }}
-                onClick={handlePost}
+               onClick={() => handlePost()}
                 disabled={isPosting || selectedLocations.length === 0}
                 className={`w-full py-3.5 rounded-xl font-bold transition text-lg ${
                   isPosting

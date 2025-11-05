@@ -9,6 +9,7 @@ export default function AdminLayout({ children }) {
   const navItems = [
     { name: "Dashboard", icon: <BarChart3 size={18} />, href: "/admin/dashboard" },
     { name: "Users", icon: <Users size={18} />, href: "/admin/user-management" },
+    { name: "Notification", icon: <Users size={18} />, href: "/admin/notification" },
     { name: "Settings", icon: <Settings size={18} />, href: "/admin/settings" },
   ];
 

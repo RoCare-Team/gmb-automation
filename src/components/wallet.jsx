@@ -74,6 +74,7 @@ useEffect(() => {
 
     try {
       setLoading(true);
+      const planData = localStorage.getItem("Plan");
 
       // Create Razorpay order
       const orderRes = await fetch("/api/subscribe", {
@@ -81,10 +82,11 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          plan: "WalletRecharge",
+          plan: planData,
           amount: amount,
         }),
       });
+      
 
       const orderData = await orderRes.json();
       if (!orderRes.ok) {

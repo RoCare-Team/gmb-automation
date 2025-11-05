@@ -137,8 +137,12 @@ export default function Sidebar({ children, user }) {
   const [subscriptionLoading, setSubscriptionLoading] = React.useState(true);
   const [userName, setUserName] = React.useState('');
   const [userEmail, setUserEmail] = React.useState('');
-  const [notificationCount] = React.useState(3);
   const [initialLoad, setInitialLoad] = React.useState(true);
+
+  const [notifications, setNotifications] = React.useState([]);
+  const [notificationCount, setNotificationCount] = React.useState(0);
+    const [notifAnchorEl, setNotifAnchorEl] = React.useState(null); // renamed ✅
+
 
   // Get user info from props or localStorage
   React.useEffect(() => {
@@ -352,6 +356,31 @@ export default function Sidebar({ children, user }) {
     }
   };
 
+
+
+const fetchNotifications = async () => {
+    try {
+      const res = await fetch("/api/admin/notification");
+      const data = await res.json();
+
+      if (data.success && data.notifications) {
+        setNotifications(data.notifications);
+        const unread = data.notifications.filter((n) => !n.isRead).length;
+        setNotificationCount(unread);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // ✅ Handle open/close
+  const handleNotifOpen = (event) => setNotifAnchorEl(event.currentTarget);
+  const handleNotifClose = () => setNotifAnchorEl(null);
+
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'POST Managements', icon: <AccountIcon />, path: '/post-management' },
@@ -487,6 +516,9 @@ export default function Sidebar({ children, user }) {
     </Box>
   );
 
+  console.log("subscriptionData",subscriptionData);
+  
+
   
   return (
     <>
@@ -534,9 +566,74 @@ export default function Sidebar({ children, user }) {
                   },
                 }}
               >
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
+                <div>
+                  <Badge badgeContent={notificationCount} color="error">
+        <NotificationsIcon
+          style={{ fontSize: 28, cursor: "pointer" }}
+          onClick={handleNotifOpen}
+        />
+      </Badge>
+
+      <Menu
+        anchorEl={notifAnchorEl}
+        open={Boolean(notifAnchorEl)}
+        onClose={handleNotifClose}
+        PaperProps={{
+          style: {
+            maxHeight: 400,
+            width: "320px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+          },
+        }}
+      >
+        <Box px={2} py={1}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Notifications
+          </Typography>
+        </Box>
+        <Divider />
+
+        {notifications.length === 0 ? (
+          <MenuItem>
+            <ListItemText
+              primary="No notifications yet"
+              primaryTypographyProps={{ color: "text.secondary" }}
+            />
+          </MenuItem>
+        ) : (
+          notifications.map((notif) => (
+            <MenuItem key={notif._id} onClick={handleNotifClose}>
+              <ListItemText
+                primary={
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight={notif.isRead ? "normal" : "bold"}
+                  >
+                    {notif.title}
+                  </Typography>
+                }
+                secondary={
+                  <>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      noWrap
+                      sx={{ maxWidth: "240px" }}
+                    >
+                      {notif.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled">
+                      {new Date(notif.createdAt).toLocaleString()}
+                    </Typography>
+                  </>
+                }
+              />
+            </MenuItem>
+          ))
+        )}
+      </Menu>
+                </div>
               </IconButton>
 
               {/* Wallet Chip */}

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Check, ArrowLeft, Sparkles, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function Plan({ user }) {
   const [loading, setLoading] = useState(false);
@@ -204,7 +205,7 @@ export default function Plan({ user }) {
               localStorage.setItem("Plan", plan.name);
               setCurrentPlan(plan.name);
               
-              alert(`Subscribed to ${plan.name} successfully! ${totalCredits} credits added.`);
+              toast.success(`Subscribed to ${plan.name} successfully! ${totalCredits} credits added.`);
               
               setTimeout(() => {
                 router.push("/dashboard");

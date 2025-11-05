@@ -39,7 +39,7 @@ const InsufficientBalanceModal = ({ onClose, onRecharge, walletBalance }) => (
         <div className="text-7xl">💸</div>
         <h3 className="text-3xl font-black text-gray-900">Insufficient Balance!</h3>
         <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
-          <p className="text-red-800 font-semibold">Current Balance: ₹{walletBalance}</p>
+          <p className="text-red-800 font-semibold">Current Balance: {walletBalance} coins</p>
           <p className="text-red-600 text-sm mt-1">Required: 350 Coins per AI post</p>
         </div>
         <p className="text-gray-600">Please recharge your wallet to continue generating AI posts</p>
@@ -822,10 +822,10 @@ const handlePost = async (post) => {
   setIsPosting(true);
 
   try {
-          const userId = localStorage.getItem("userId");
+    const userId = localStorage.getItem("userId");
 
-
-        const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+    // 1️⃣ Fetch user data
+    const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
     if (!userRes.ok) {
       showToast("Failed to fetch user data", "error");
       return;
@@ -835,26 +835,32 @@ const handlePost = async (post) => {
     const subscription = userData.subscription || {};
     const walletBalance = userData.wallet || 0;
 
+    console.log("userData",userData);
+    
+
     setUserWallet(walletBalance);
 
-     // ✅ If user is on Free Plan
-    if (subscription.plan === "Free" || subscription.status !== "active" && walletBalance < 350) {
-        // ⛔ Already used 2 free generations
-        showToast("You have used your 2 free AI generations. Please upgrade your plan.", "error");
-        setShowUpgradePlan(true);
-        return;
-      
-    } else {
-      // ✅ Paid Plan: Check wallet balance
-      if (walletBalance < 350) {
-        setShowInsufficientBalance(true);
-        return;
-      }
+    // 2️⃣ Determine deduction based on plan
+    const isFreePlan = subscription.plan === "Free";
+    const deductAmount = isFreePlan ? 100 : 50;
+
+    // 3️⃣ Check wallet before posting
+    if (isFreePlan && walletBalance < 100) {
+      showToast("Insufficient wallet balance. Please upgrade your plan.", "error");
+      setShowUpgradePlan(true);
+      return;
+    }
+
+    if (!isFreePlan && walletBalance < 50) {
+      showToast("Insufficient wallet balance. Please recharge your wallet.", "error");
+      setShowInsufficientBalance(true);
+      return;
     }
 
     const accountId = localStorage.getItem("accountId");
     const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
 
+    // 4️⃣ Send post to webhook
     const response = await fetch(
       "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
       {
@@ -865,11 +871,13 @@ const handlePost = async (post) => {
         },
         body: JSON.stringify({
           account: accountId,
-          locationData: {
+          locationData: [
+            {
             city: slug,
             bookUrl: payloadDetails.website,
             cityName: payloadDetails.locality,
-          },
+          }
+          ],
           output: post?.aiOutput || "",
           description: post?.description || "",
           accessToken: session?.accessToken || "",
@@ -877,7 +885,6 @@ const handlePost = async (post) => {
       }
     );
 
-    // Safely parse response
     let data;
     try {
       data = await response.json();
@@ -885,11 +892,32 @@ const handlePost = async (post) => {
       data = await response.text();
     }
 
-    // ✅ Check for success status
+    // 5️⃣ If post success → Deduct coins
     if (response.ok) {
       console.log("Webhook success:", data);
-      setShowSuccess(true);
       showToast("Post successfully sent!", "success");
+      setShowSuccess(true);
+
+      // 🪙 Deduct coins based on plan
+      const walletRes = await fetch("/api/auth/signup", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          amount: deductAmount,
+          type: "deduct",
+        }),
+      });
+
+      if (walletRes.ok) {
+        const newBalance = walletBalance - deductAmount;
+        setUserWallet(newBalance);
+        localStorage.setItem("walletBalance", newBalance);
+        showToast(`${deductAmount} coins deducted from your wallet`, "info");
+      } else {
+        showToast("Post sent, but wallet deduction failed", "warning");
+      }
+
     } else {
       console.error("Webhook failed:", data);
       showToast(`Failed to send post (Status: ${response.status})`, "error");
