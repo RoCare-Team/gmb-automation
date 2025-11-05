@@ -10,6 +10,7 @@ export async function fetchGoogleAccounts(accessToken) {
     if (!accountsRes.ok) {
       throw new Error("Failed to fetch Google accounts")
     }
+    
 
     const accountsData = await accountsRes.json()
     return accountsData.accounts || []
