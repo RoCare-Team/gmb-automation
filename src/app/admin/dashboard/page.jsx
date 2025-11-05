@@ -79,37 +79,44 @@ export default function AdminDashboard() {
       </div>
 
       {/* Revenue & Plans Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-yellow-500 text-white rounded-xl p-5 shadow-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-3">
+        <div className="bg-green-800 text-white rounded-xl p-5 shadow-lg">
           <h2 className="text-sm opacity-80">Total Revenue</h2>
           <p className="text-3xl font-bold mt-2">
             ₹{stats.totalRevenue?.toLocaleString() || 0}
           </p>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-md text-gray-800">
-          <h2 className="text-lg font-semibold mb-3">Plan Distribution</h2>
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between">
-              <span>Basic Plan</span>
-              <span className="font-bold text-blue-600">
-                {stats.planCounts?.basic || 0}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Standard Plan</span>
-              <span className="font-bold text-green-600">
-                {stats.planCounts?.standard || 0}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Premium Plan</span>
-              <span className="font-bold text-purple-600">
-                {stats.planCounts?.premium || 0}
-              </span>
-            </div>
-          </div>
-        </div>
+       <div className="bg-white rounded-xl p-5 shadow-md text-gray-800 w-full max-w-sm mx-auto">
+  <h2 className="text-lg font-semibold mb-4 text-gray-900">Plan Distribution</h2>
+
+  <div className="flex flex-col gap-3">
+    {/* Basic Plan */}
+    <div className="flex justify-between items-center">
+      <span className="text-gray-700">Basic Plan</span>
+      <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-semibold">
+        {stats.planCounts?.basic || 0}
+      </span>
+    </div>
+
+    {/* Standard Plan */}
+    <div className="flex justify-between items-center">
+      <span className="text-gray-700">Standard Plan</span>
+      <span className="px-3 py-1 rounded-full bg-green-100 text-green-600 font-semibold">
+        {stats.planCounts?.standard || 0}
+      </span>
+    </div>
+
+    {/* Premium Plan */}
+    <div className="flex justify-between items-center">
+      <span className="text-gray-700">Premium Plan</span>
+      <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-600 font-semibold">
+        {stats.planCounts?.premium || 0}
+      </span>
+    </div>
+  </div>
+</div>
+
       </div>
 
       {/* User Growth Chart */}
