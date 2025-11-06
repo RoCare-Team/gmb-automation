@@ -9,13 +9,16 @@ export default function AuthGuard({ children }) {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
+    if (typeof window === "undefined") return;
+
+    const userId = localStorage.getItem("userId"); // For normal user
+    const role = localStorage.getItem("role"); // For admin
 
     // ✅ Public routes that don’t need authentication
     const publicRoutes = [
       "/",
       "/login",
-      "/adminLogin", // ✅ Added this line
+      "/adminLogin",
       "/about",
       "/contact",
       "/privacy-policy",
@@ -24,17 +27,48 @@ export default function AuthGuard({ children }) {
       "/refund-policy",
     ];
 
-    // If not logged in and trying to access a private route → redirect to login
-    if (!userId && !publicRoutes.includes(pathname)) {
-      router.replace("/");
-    }
+    const isPublicRoute = publicRoutes.includes(pathname);
+    const isAdminRoute = pathname.startsWith("/admin");
 
-    // If logged in and currently on login page → redirect to dashboard
-    if (userId && (pathname === "/login" || pathname === "/adminLogin")) {
-      router.replace("/dashboard");
-    }
+    // 🧠 Add small delay for localStorage readiness
+    setTimeout(() => {
+      // ✅ Case 1: Admin area access
+      if (isAdminRoute) {
+        // If not admin → redirect to admin login
+        if (role !== "admin") {
+          router.replace("/adminLogin");
+          setIsChecking(false);
+          return;
+        }
+        // If admin logged in → allow
+        setIsChecking(false);
+        return;
+      }
 
-    setIsChecking(false);
+      // ✅ Case 2: Not logged in + accessing private user route → redirect to home
+      if (!userId && !isPublicRoute && role !== "admin") {
+        router.replace("/");
+        setIsChecking(false);
+        return;
+      }
+
+      // ✅ Case 3: Logged-in user trying to access /login → go to dashboard
+      if (userId && pathname === "/login") {
+        router.replace("/dashboard");
+        setIsChecking(false);
+        return;
+      }
+
+      // ✅ Case 4: Admin already logged in & visiting /adminLogin → redirect dashboard
+      if (role === "admin" && pathname === "/adminLogin") {
+        router.replace("/admin/dashboard");
+        setIsChecking(false);
+        return;
+      }
+
+      // ✅ Case 5: Allow public routes
+      setIsChecking(false);
+    }, 100);
   }, [pathname, router]);
 
   if (isChecking) return null;

@@ -9,11 +9,12 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
+  try {
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -21,6 +22,8 @@ export default function AdminLogin() {
     });
 
     const data = await res.json();
+    console.log("Login Response:", data);
+
     setLoading(false);
 
     if (!res.ok) {
@@ -28,8 +31,18 @@ export default function AdminLogin() {
       return;
     }
 
+    // ✅ Save token and role to localStorage
+    localStorage.setItem("role", data.role);
+
+    // ✅ Redirect to admin dashboard
     router.push("/admin/dashboard");
-  };
+  } catch (err) {
+    console.error("Login error:", err);
+    setError("Something went wrong. Please try again.");
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

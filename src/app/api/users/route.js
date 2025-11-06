@@ -31,10 +31,14 @@ async function connectDB() {
 }
 
 // ✅ GET: Fetch all users
+// ✅ GET: Fetch all users (Newest first)
 export async function GET() {
   try {
     await connectDB();
-    const users = await User.find({});
+
+    // Sort users by createdAt (descending) so newest users appear first
+    const users = await User.find({}).sort({ createdAt: -1 });
+
     return NextResponse.json({ success: true, users });
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -44,6 +48,7 @@ export async function GET() {
     );
   }
 }
+
 
 // ✅ POST: Dashboard stats + monthly growth
 // ✅ POST: Dashboard stats + monthly growth + plan breakdown + total revenue

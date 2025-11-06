@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Search, Filter, X, Crown, Zap, Shield, Mail, Phone, Calendar, Edit2, Trash2, Plus, User } from "lucide-react";
+import { Search, Filter, X, Crown, Zap, Shield, Mail, Phone, Calendar, Edit2, Trash2, Plus, User, User2Icon } from "lucide-react";
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -332,6 +332,7 @@ export default function UserManagement() {
               <thead className="bg-gradient-to-r from-indigo-50 to-purple-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User Info</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User Name</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Contact</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Plan</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
@@ -352,6 +353,17 @@ export default function UserManagement() {
                           <div className="font-semibold text-gray-800">{user.userId}</div>
                           <div className="text-xs text-gray-500">ID: {user._id?.slice(-8)}</div>
                         </div>
+                      </div>
+                    </td>
+                     <td className="px-6 py-4">
+                      <div className="space-y-1">
+                       
+                        {user.fullName && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <User2Icon size={14} className="text-gray-400" />
+                            {user.fullName}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
