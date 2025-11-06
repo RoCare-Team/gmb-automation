@@ -41,7 +41,7 @@ export async function POST(req) {
 
     // 4. Naye payload ke saath POST request n8n webhook ko bhejein
     const response = await fetch(
-      "https://n8n.srv968758.hstgr.cloud/webhook/f4b569d7-c402-4c76-993e-8bed20e1df95",
+      "https://harshxgandhi1.app.n8n.cloud/webhook/f4b569d7-c402-4c76-993e-8bed20e1df95",
       {
         method: "POST",
         headers: {

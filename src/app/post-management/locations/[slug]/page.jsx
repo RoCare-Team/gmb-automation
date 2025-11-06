@@ -516,7 +516,6 @@ export default function PostManagement() {
     const { slug } = useParams();
       const { data: session } = useSession()
     
-  
 
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("total");
@@ -862,7 +861,7 @@ const handlePost = async (post) => {
 
     // 4️⃣ Send post to webhook
     const response = await fetch(
-      "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+      "https://harshxgandhi1.app.n8n.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
       {
         method: "POST",
         headers: {

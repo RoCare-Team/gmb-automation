@@ -897,7 +897,7 @@ const handlePost = async () => {
 
     // Send to webhook
     const response = await fetch(
-      "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+      "https://harshxgandhi1.app.n8n.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1075,6 +1075,10 @@ const handlePost = async () => {
   );
 
   const allSelected = selectedLocations.length === filteredLocations.length && filteredLocations.length > 0;
+
+
+  console.log("aiGenerateImage",aiGenerateImage);
+  
 
 
   return (

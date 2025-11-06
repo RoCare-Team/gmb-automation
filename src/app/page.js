@@ -42,7 +42,7 @@ export default function LimbuAILanding() {
     { value: "10k+", label: "Posts Created", icon: <PenTool className="w-5 h-5" /> },
     { value: "500+", label: "Businesses", icon: <TrendingUp className="w-5 h-5" /> },
     { value: "98%", label: "Response Rate", icon: <MessageSquare className="w-5 h-5" /> },
-    { value: "100%", label: "90 days in traffic Double", icon: <Clock className="w-5 h-5" /> }
+    { value: "2X", label: "traffic in 90 days", icon: <Clock className="w-5 h-5" /> }
   ];
 
   return (

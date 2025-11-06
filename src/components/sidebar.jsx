@@ -49,6 +49,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
+import Link from 'next/link';
 
 const drawerWidth = 260;
 
@@ -445,6 +446,7 @@ const fetchNotifications = async () => {
             <StoreIcon sx={{ color: 'white', fontSize: '1.5rem' }} />
           </Box>
           {open && (
+            <Link href="/">
             <Typography
               variant="h6"
               sx={{
@@ -457,6 +459,7 @@ const fetchNotifications = async () => {
             >
               Manager
             </Typography>
+            </Link>
           )}
         </Box>
         {open && (

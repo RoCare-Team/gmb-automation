@@ -56,7 +56,7 @@ export default function DashboardPage() {
       let pageToken = null;
 
       do {
-        const res = await fetch("https://n8n.srv968758.hstgr.cloud/webhook/b3f4dda4-aef1-4e87-a426-b503cee3612b", {
+        const res = await fetch("https://harshxgandhi1.app.n8n.cloud/webhook/b3f4dda4-aef1-4e87-a426-b503cee3612b", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
