@@ -599,7 +599,10 @@ export default function DashboardPage() {
     }
   }, [session?.user?.email, status, initialFetchDone, fetchInitialData]);
 
+  
+
   const handleListingData = (listing) => {
+    
     const dataToSend = {
       locality: listing?.storefrontAddress?.locality || "",
       website: listing?.websiteUri || "",
@@ -696,8 +699,9 @@ export default function DashboardPage() {
         const locality = item.storefrontAddress?.locality || "";
         const address = item.storefrontAddress?.addressLines?.[0] || "";
         const title = item.title || "";
+        const websiteUrl = item.websiteUri || "";
 
-        return { locationId, accountId, locality, address, title };
+        return { locationId, accountId, locality, address, title,websiteUrl };
       });
 
       localStorage.setItem("locationDetails", JSON.stringify(locationDetails));
