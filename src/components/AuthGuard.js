@@ -15,6 +15,7 @@ export default function AuthGuard({ children }) {
     const publicRoutes = [
       "/",
       "/login",
+      "/adminLogin", // ✅ Added this line
       "/about",
       "/contact",
       "/privacy-policy",
@@ -29,7 +30,7 @@ export default function AuthGuard({ children }) {
     }
 
     // If logged in and currently on login page → redirect to dashboard
-    if (userId && pathname === "/login") {
+    if (userId && (pathname === "/login" || pathname === "/adminLogin")) {
       router.replace("/dashboard");
     }
 
