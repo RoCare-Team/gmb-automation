@@ -93,6 +93,7 @@ export default function ProfilePage() {
   );
 }
 
+
 function InfoRow({ label, value }) {
   
   return (
