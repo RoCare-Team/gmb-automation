@@ -16,6 +16,7 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPlan, setFilterPlan] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [filterDate, setFilterDate] = useState("All");
 
   // Plan statistics
   const [stats, setStats] = useState({
@@ -55,8 +56,37 @@ export default function UserManagement() {
       result = result.filter((user) => user.subscription?.status === filterStatus);
     }
 
+    // Date filter
+    if (filterDate !== "All") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      result = result.filter((user) => {
+        if (!user.createdAt) return false;
+        const userDate = new Date(user.createdAt);
+        const userDateOnly = new Date(userDate.getFullYear(), userDate.getMonth(), userDate.getDate());
+        
+        switch (filterDate) {
+          case "Today":
+            return userDateOnly.getTime() === today.getTime();
+          case "Last 7 Days":
+            const last7Days = new Date(today);
+            last7Days.setDate(last7Days.getDate() - 7);
+            return userDateOnly >= last7Days;
+          case "Last 30 Days":
+            const last30Days = new Date(today);
+            last30Days.setDate(last30Days.getDate() - 30);
+            return userDateOnly >= last30Days;
+          case "This Month":
+            return userDate.getMonth() === now.getMonth() && userDate.getFullYear() === now.getFullYear();
+          default:
+            return true;
+        }
+      });
+    }
+
     setFilteredUsers(result);
-  }, [searchQuery, filterPlan, filterStatus, users]);
+  }, [searchQuery, filterPlan, filterStatus, filterDate, users]);
 
   // ✅ Calculate statistics
   useEffect(() => {
@@ -173,6 +203,7 @@ export default function UserManagement() {
     setSearchQuery("");
     setFilterPlan("All");
     setFilterStatus("All");
+    setFilterDate("All");
   };
 
   if (loading) {
@@ -305,8 +336,24 @@ export default function UserManagement() {
               </select>
             </div>
 
+            {/* Date Filter */}
+            <div className="relative">
+              <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <select
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="pl-11 pr-8 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer min-w-[180px]"
+              >
+                <option value="All">All Time</option>
+                <option value="Today">Today</option>
+                <option value="Last 7 Days">Last 7 Days</option>
+                <option value="Last 30 Days">Last 30 Days</option>
+                <option value="This Month">This Month</option>
+              </select>
+            </div>
+
             {/* Clear Filters */}
-            {(searchQuery || filterPlan !== "All" || filterStatus !== "All") && (
+            {(searchQuery || filterPlan !== "All" || filterStatus !== "All" || filterDate !== "All") && (
               <button
                 onClick={clearFilters}
                 className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all flex items-center gap-2 whitespace-nowrap"
@@ -336,6 +383,7 @@ export default function UserManagement() {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Contact</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Plan</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created Date</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subscribed</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Expiry Date</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
@@ -413,6 +461,31 @@ export default function UserManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-gray-400" />
+                        <div className="text-sm text-gray-700">
+                          {user.createdAt ? (
+                            <>
+                              <div className="font-medium">
+                                {new Date(user.createdAt).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric"
+                                })}
+                              </div>
+                              {new Date(user.createdAt).toDateString() === new Date().toDateString() && (
+                                <span className="inline-block mt-0.5 px-2 py-0.5 text-xs text-blue-700 bg-blue-100 rounded-full font-semibold">
+                                  Today
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-gray-400 italic">N/A</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar size={14} className="text-gray-400" />
                         {user.subscription?.date
@@ -479,7 +552,7 @@ export default function UserManagement() {
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="text-center py-12">
+                    <td colSpan="9" className="text-center py-12">
                       <div className="text-gray-400">
                         <Search size={48} className="mx-auto mb-3 opacity-50" />
                         <p className="text-lg font-medium">No users found</p>
