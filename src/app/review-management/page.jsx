@@ -56,7 +56,7 @@ export default function DashboardPage() {
       let pageToken = null;
 
       do {
-        const res = await fetch("https://harshxgandhi1.app.n8n.cloud/webhook/b3f4dda4-aef1-4e87-a426-b503cee3612b", {
+        const res = await fetch("https://n8n.srv968758.hstgr.cloud/webhook/b3f4dda4-aef1-4e87-a426-b503cee3612b", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -77,7 +77,20 @@ export default function DashboardPage() {
         }
       } while (pageToken);
 
-      setReviews(allReviews);
+      // Sort reviews: unanswered first (no reply or empty comment), then answered
+      const sortedReviews = allReviews.sort((a, b) => {
+        const aHasReply = a.reviewReply && a.reviewReply.comment && a.reviewReply.comment.trim() !== "";
+        const bHasReply = b.reviewReply && b.reviewReply.comment && b.reviewReply.comment.trim() !== "";
+        
+        // If a doesn't have reply and b does, a comes first (return -1)
+        if (!aHasReply && bHasReply) return -1;
+        // If a has reply and b doesn't, b comes first (return 1)
+        if (aHasReply && !bHasReply) return 1;
+        // Otherwise, maintain original order
+        return 0;
+      });
+
+      setReviews(sortedReviews);
       setHasLoadedReviews(true);
     } catch (err) {
       console.error("Error fetching reviews:", err);
@@ -105,9 +118,74 @@ export default function DashboardPage() {
     );
   };
 
+  const handleAIReply = async (review, setLocalReply, setShowReplyInput, setGeneratingAI) => {
+    try {
+      setGeneratingAI(true);
+      
+      // Destructure review details
+      const { 
+        name, 
+        reviewId, 
+        comment, 
+        starRating, 
+        reviewer 
+      } = review;
+      
+      const starRatingMap = {
+        "FIVE": "Five",
+        "FOUR": "Four",
+        "THREE": "Three",
+        "TWO": "Two",
+        "ONE": "One"
+      };
+
+      // Extract account ID and location ID from review.name
+      // Format: "accounts/{accountId}/locations/{locationId}/reviews/{reviewId}"
+      const [, accountId, , locationId] = name?.split('/') || [];
+
+      console.log("Sending AI Reply Request:", {
+        accountId,
+        locationId,
+        reviewId,
+        reviewerName: reviewer?.displayName,
+        starRating: starRatingMap[starRating],
+        comment
+      });
+
+      const res = await fetch("https://n8n.srv968758.hstgr.cloud/webhook/59634515-0550-4cb5-9031-0d82bc0a303d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_token: session?.accessToken,
+          acc_id: accountId,
+          locationIds: locationId,
+          Reviewer_Name: reviewer?.displayName || "Anonymous",
+          Star_Rating: starRatingMap[starRating] || "Five",
+          Review_Content: comment || "No comment provided",
+          Review_ID: reviewId
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (res.ok && data.reply) {
+        setLocalReply(data.reply);
+        setShowReplyInput(true);
+      } else {
+        alert("Failed to generate AI reply. Please try manual reply.");
+      }
+    } catch (err) {
+      console.error("AI Reply Error:", err);
+      alert("Error generating AI reply. Please try manual reply.");
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
   const ReviewCard = ({ review }) => {
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [localReply, setLocalReply] = useState("");
+    const [generatingAI, setGeneratingAI] = useState(false);
     const isReplying = replyingTo === review.reviewId;
 
     const handleManualReply = async () => {
@@ -163,21 +241,38 @@ export default function DashboardPage() {
             <StarRating rating={review.starRating} />
             <p className="text-gray-700 mt-2">{review.comment || "No comment provided."}</p>
 
-            {review.reviewReply && (
+            {review.reviewReply && review.reviewReply.comment && review.reviewReply.comment.trim() !== "" && (
               <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
                 <p className="text-sm font-semibold text-green-900 mb-1">Your Reply</p>
                 <p className="text-sm text-green-800">{review.reviewReply.comment}</p>
               </div>
             )}
 
-            {!review.reviewReply && (
+            {(!review.reviewReply || !review.reviewReply.comment || review.reviewReply.comment.trim() === "") && (
               <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => handleAIReply(review, setLocalReply, setShowReplyInput, setGeneratingAI)}
+                  disabled={generatingAI || isReplying}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generatingAI ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      AI Reply
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={() => setShowReplyInput(!showReplyInput)}
                   className="bg-white text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-lg border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 transition-all"
                 >
                   <MessageCircle className="w-4 h-4 inline-block mr-2" />
-                  Reply
+                  Manual Reply
                 </button>
               </div>
             )}

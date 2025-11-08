@@ -33,7 +33,7 @@ const Toast = ({ message, type = "success" }) => (
 );
 
 // Insufficient Balance Modal
-const InsufficientBalanceModal = ({ onClose, onRecharge, walletBalance }) => (
+const InsufficientBalanceModal = ({ onClose, onRecharge, walletBalance, requiredCoins }) => (
   <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border-4 border-red-200 animate-scale-in">
       <div className="text-center space-y-6">
@@ -41,9 +41,15 @@ const InsufficientBalanceModal = ({ onClose, onRecharge, walletBalance }) => (
         <h3 className="text-3xl font-black text-gray-900">Insufficient Balance!</h3>
         <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
           <p className="text-red-800 font-semibold">Current Balance: ₹{walletBalance}</p>
-          <p className="text-red-600 text-sm mt-1">Required: 350 Coins per AI post</p>
+          <p className="text-red-600 text-sm mt-1">
+            Required: {requiredCoins} Coins {requiredCoins === 300 ? 'for AI generation' : 'per location'}
+          </p>
         </div>
-        <p className="text-gray-600">Please recharge your wallet to continue generating AI posts</p>
+        <p className="text-gray-600">
+          {requiredCoins === 300 
+            ? 'Please recharge your wallet to continue generating AI posts' 
+            : 'Please recharge your wallet to continue posting to locations'}
+        </p>
         <div className="flex gap-3">
           <button
             onClick={onRecharge}
@@ -489,13 +495,14 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
 
 // Main Component
 export default function PostManagement() {
-  const { data: session } = useSession();
+      const { data: session } = useSession()
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
   const [countdown, setCountdown] = useState(0);
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
   const [showUpgradePlan, setShowUpgradePlan] = useState(false);
   const [userWallet, setUserWallet] = useState(0);
+  const [requiredCoinsForPost, setRequiredCoinsForPost] = useState(300);
 
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("total");
@@ -594,17 +601,18 @@ export default function PostManagement() {
 
       setUserWallet(walletBalance);
 
-      if (subscription.plan === "Free" && walletBalance < 350) {
+      if (subscription.plan === "Free" && walletBalance < 300) {
         setShowUpgradePlan(true);
         return;
       }
 
-      if (subscription.plan !== "Free" && subscription.status !== "active" && walletBalance < 350) {
+      if (subscription.plan !== "Free" && subscription.status !== "active" && walletBalance < 300) {
         setShowUpgradePlan(true);
         return;
       }
 
-      if (walletBalance < 350) {
+      if (walletBalance < 300) {
+        setRequiredCoinsForPost(300);
         setShowInsufficientBalance(true);
         return;
       }
@@ -678,7 +686,7 @@ export default function PostManagement() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          amount: 350,
+          amount: 300,
           type: "deduct",
         }),
       });
@@ -689,8 +697,8 @@ export default function PostManagement() {
         console.warn("Wallet deduction failed:", walletData.error);
         showToast(walletData.error, "error");
       } else {
-        showToast("350 coins deducted for AI post ✅", "success");
-        setUserWallet((prev) => Math.max(0, prev - 350));
+        showToast("300 coins deducted for AI post ✅", "success");
+        setUserWallet((prev) => Math.max(0, prev - 300));
       }
 
       setPosts((prev) => [postData.data, ...prev]);
@@ -787,7 +795,6 @@ export default function PostManagement() {
   };
 
   const handleCheckboxChange = (location) => {
-    
     setSelectedLocations((prev) => {
       const exists = prev.find((loc) => loc.locationId === location.locationId);
       if (exists) {
@@ -807,13 +814,10 @@ export default function PostManagement() {
   };
 
   const handleOpenModal = (post) => {
-
     setSelectedPost(post);
     setSelectedLocations([]);
     setIsModalOpen(true);
   };
-
-  
 
   const handleConfirmPost = async () => {
     if (!selectedPost || selectedLocations.length === 0) {
@@ -825,6 +829,7 @@ export default function PostManagement() {
 
     try {
       const userId = localStorage.getItem("userId");
+
       const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
       if (!userRes.ok) {
         showToast("Failed to fetch user data", "error");
@@ -841,26 +846,24 @@ export default function PostManagement() {
       const perLocationDeduct = isFreePlan ? 100 : 50;
       const totalDeduct = perLocationDeduct * selectedLocations.length;
 
-      if (isFreePlan && walletBalance < totalDeduct) {
-        showToast("Insufficient wallet balance. Please upgrade your plan.", "error");
-        setShowUpgradePlan(true);
+      // Check for insufficient balance - Close modal and show popup
+      if (isFreePlan && walletBalance < 100) {
         setIsPosting(false);
-        return;
-      }
-
-      if (!isFreePlan && walletBalance < totalDeduct) {
-        showToast("Insufficient wallet balance. Please recharge your wallet.", "error");
+        setIsModalOpen(false);
+        setRequiredCoinsForPost(100);
         setShowInsufficientBalance(true);
-        setIsPosting(false);
         return;
       }
 
-      const payloadDetails = JSON.parse(localStorage.getItem("locationDetails")) || {};
-
-      
+      if (!isFreePlan && walletBalance < 50) {
+        setIsPosting(false);
+        setIsModalOpen(false);
+        setRequiredCoinsForPost(50);
+        setShowInsufficientBalance(true);
+        return;
+      }
 
       const locationData = selectedLocations.map((loc) => ({
-
         city: loc.locationId,
         cityName: loc.locality,
         bookUrl: loc.websiteUrl || "",
@@ -904,15 +907,14 @@ export default function PostManagement() {
         }
 
         await handleUpdateStatus(selectedPost._id, "posted");
-        
-        setShowSuccess(true);
+
         setIsModalOpen(false);
         setSelectedLocations([]);
         setSelectedPost(null);
+        setShowSuccess(true);
       } else {
         showToast("Failed to send post to GMB", "error");
       }
-
     } catch (error) {
       console.error("Post error:", error);
       showToast("Failed to send post", "error");
@@ -1240,6 +1242,7 @@ export default function PostManagement() {
         {showInsufficientBalance && (
           <InsufficientBalanceModal
             walletBalance={userWallet}
+            requiredCoins={requiredCoinsForPost}
             onClose={() => setShowInsufficientBalance(false)}
             onRecharge={() => {
               setShowInsufficientBalance(false);
@@ -1255,23 +1258,6 @@ export default function PostManagement() {
               window.location.href = "/subscription";
             }}
           />
-        )}
-        {isPosting && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-            <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-10 flex flex-col items-center space-y-6 max-w-md w-full border-4 border-white/30">
-              <div className="relative">
-                <div className="absolute inset-0 bg-orange-300/40 rounded-full blur-2xl animate-pulse"></div>
-                <div className="text-8xl animate-bounce-slow">🚀</div>
-              </div>
-              <div className="text-center space-y-3">
-                <h3 className="text-3xl font-black text-white">Publishing Post...</h3>
-                <p className="text-blue-100 text-sm">Sending to Google My Business</p>
-              </div>
-              <div className="w-full bg-white/30 rounded-full h-2.5 overflow-hidden">
-                <div className="bg-gradient-to-r from-orange-300 via-yellow-300 to-green-300 h-full rounded-full animate-shimmer"></div>
-              </div>
-            </div>
-          </div>
         )}
         {showSuccess && <SuccessOverlay onComplete={() => setShowSuccess(false)} />}
 
@@ -1350,109 +1336,129 @@ export default function PostManagement() {
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative overflow-hidden"
             >
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
-                  Select Your Business Locations
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  Choose one or multiple locations to post your campaign
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-10 text-gray-700 focus:ring-2 focus:ring-green-500 outline-none"
-                  />
-                  <MapPin className="absolute right-3 top-2.5 text-gray-400 w-5 h-5" />
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleSelectAll}
-                  className={`px-4 py-2.5 flex items-center gap-2 rounded-xl font-semibold transition ${
-                    allSelected
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "bg-blue-500 text-white hover:bg-blue-600"
-                  }`}
+              {!isPosting && (
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition"
                 >
-                  <CheckSquare className="w-5 h-5" />
-                  {allSelected ? "Deselect All" : "Select All"}
-                </motion.button>
-              </div>
-
-              <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-2xl p-3 space-y-3 mb-5">
-                {filteredLocations.length > 0 ? (
-                  filteredLocations.map((loc, index) => (
-                    <motion.label
-                      key={index}
-                      whileHover={{ scale: 1.01 }}
-                      className={`flex items-start gap-3 p-3 rounded-xl border transition cursor-pointer ${
-                        selectedLocations.some(
-                          (sel) => sel.locationId === loc.locationId
-                        )
-                          ? "border-green-500 bg-green-50"
-                          : "border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedLocations.some(
-                          (sel) => sel.locationId === loc.locationId
-                        )}
-                        onChange={() => handleCheckboxChange(loc)}
-                        className="accent-green-600 mt-1 w-5 h-5"
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-800">{loc.title}</p>
-                        <p className="text-sm text-gray-600">{loc.locality}</p>
-                        <p className="text-xs text-gray-500">{loc.address}</p>
-                      </div>
-                    </motion.label>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-8">
-                    No locations found.
-                  </p>
-                )}
-              </div>
-
-              {selectedLocations.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 text-sm text-green-800"
-                >
-                  <strong>{selectedLocations.length}</strong> location
-                  {selectedLocations.length > 1 && "s"} selected:{" "}
-                  {selectedLocations.map((loc) => loc.locality).join(", ")}
-                </motion.div>
+                  <X className="w-6 h-6" />
+                </button>
               )}
 
-              <motion.button
-                whileHover={{ scale: isPosting ? 1 : 1.05 }}
-                whileTap={{ scale: isPosting ? 1 : 0.95 }}
-                onClick={handleConfirmPost}
-                disabled={isPosting || selectedLocations.length === 0}
-                className={`w-full py-3.5 rounded-xl font-bold transition text-lg ${
-                  isPosting || selectedLocations.length === 0
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-500 to-emerald-500 text-white hover:shadow-lg"
-                }`}
-              >
-                {isPosting ? "Posting..." : "Confirm & Post"}
-              </motion.button>
+              {isPosting ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-orange-300/40 rounded-full blur-2xl animate-pulse"></div>
+                    <div className="text-8xl animate-bounce-slow">🚀</div>
+                  </div>
+                  <div className="text-center space-y-3">
+                    <h3 className="text-3xl font-black text-gray-900">Publishing Post...</h3>
+                    <p className="text-gray-600 text-sm">Sending to Google My Business</p>
+                  </div>
+                  <div className="w-full max-w-md bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div className="bg-gradient-to-r from-orange-400 via-yellow-400 to-green-400 h-full rounded-full animate-shimmer"></div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-6">
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
+                      Select Your Business Locations
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                      Choose one or multiple locations to post your campaign
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        placeholder="Search location..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-10 text-gray-700 focus:ring-2 focus:ring-green-500 outline-none"
+                      />
+                      <MapPin className="absolute right-3 top-2.5 text-gray-400 w-5 h-5" />
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSelectAll}
+                      className={`px-4 py-2.5 flex items-center gap-2 rounded-xl font-semibold transition ${
+                        allSelected
+                          ? "bg-red-500 text-white hover:bg-red-600"
+                          : "bg-blue-500 text-white hover:bg-blue-600"
+                      }`}
+                    >
+                      <CheckSquare className="w-5 h-5" />
+                      {allSelected ? "Deselect All" : "Select All"}
+                    </motion.button>
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-2xl p-3 space-y-3 mb-5">
+                    {filteredLocations.length > 0 ? (
+                      filteredLocations.map((loc, index) => (
+                        <motion.label
+                          key={index}
+                          whileHover={{ scale: 1.01 }}
+                          className={`flex items-start gap-3 p-3 rounded-xl border transition cursor-pointer ${
+                            selectedLocations.some(
+                              (sel) => sel.locationId === loc.locationId
+                            )
+                              ? "border-green-500 bg-green-50"
+                              : "border-gray-200 hover:bg-gray-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedLocations.some(
+                              (sel) => sel.locationId === loc.locationId
+                            )}
+                            onChange={() => handleCheckboxChange(loc)}
+                            className="accent-green-600 mt-1 w-5 h-5"
+                          />
+                          <div>
+                            <p className="font-semibold text-gray-800">{loc.title}</p>
+                            <p className="text-sm text-gray-600">{loc.locality}</p>
+                            <p className="text-xs text-gray-500">{loc.address}</p>
+                          </div>
+                        </motion.label>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">
+                        No locations found.
+                      </p>
+                    )}
+                  </div>
+
+                  {selectedLocations.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 text-sm text-green-800"
+                    >
+                      <strong>{selectedLocations.length}</strong> location
+                      {selectedLocations.length > 1 && "s"} selected:{" "}
+                      {selectedLocations.map((loc) => loc.locality).join(", ")}
+                    </motion.div>
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: selectedLocations.length === 0 ? 1 : 1.05 }}
+                    whileTap={{ scale: selectedLocations.length === 0 ? 1 : 0.95 }}
+                    onClick={handleConfirmPost}
+                    disabled={selectedLocations.length === 0}
+                    className={`w-full py-3.5 rounded-xl font-bold transition text-lg ${
+                      selectedLocations.length === 0
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-gradient-to-r from-blue-500 to-emerald-500 text-white hover:shadow-lg"
+                    }`}
+                  >
+                    Confirm & Post
+                  </motion.button>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

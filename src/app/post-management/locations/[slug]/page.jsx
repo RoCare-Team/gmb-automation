@@ -860,7 +860,7 @@ const handlePost = async (post) => {
 
     // 4️⃣ Send post to webhook
     const response = await fetch(
-      "https://harshxgandhi1.app.n8n.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+      "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
       {
         method: "POST",
         headers: {
