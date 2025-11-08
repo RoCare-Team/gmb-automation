@@ -549,10 +549,8 @@ export default function DashboardPage() {
       }
 
       const accountId = accountsData[0].name.replace("accounts/", "");
-      console.log("Fetching locations for account:", accountId);
       
       const allLocations = await fetchAllLocationsByAccount(token, accountId);
-      console.log("Locations fetched:", allLocations.length);
 
       if (allLocations.length > 0) {
         const locationsWithVoM = await Promise.all(

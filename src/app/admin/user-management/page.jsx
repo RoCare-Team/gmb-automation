@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Search, Filter, X, Crown, Zap, Shield, Mail, Phone, Calendar, Edit2, Trash2, Plus, User, User2Icon } from "lucide-react";
+import { Search, Filter, X, Crown, Zap, Shield, Mail, Phone, Calendar, Edit2, Trash2, Plus, User, User2Icon, Image as ImageIcon, Eye, ZoomIn } from "lucide-react";
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -11,14 +11,16 @@ export default function UserManagement() {
   const [selectedPlan, setSelectedPlan] = useState("");
   const [addingUser, setAddingUser] = useState(false);
   const [newUser, setNewUser] = useState({ userId: "", email: "", phone: "", plan: "Basic" });
+  const [viewingUserPosts, setViewingUserPosts] = useState(null);
+  const [userPosts, setUserPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [fullViewImage, setFullViewImage] = useState(null);
   
-  // Search & Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPlan, setFilterPlan] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterDate, setFilterDate] = useState("All");
 
-  // Plan statistics
   const [stats, setStats] = useState({
     total: 0,
     basic: 0,
@@ -27,16 +29,13 @@ export default function UserManagement() {
     active: 0
   });
 
-  // 🔹 Fetch all users on mount
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  // 🔹 Apply search and filters
   useEffect(() => {
     let result = [...users];
 
-    // Search filter
     if (searchQuery) {
       result = result.filter(
         (user) =>
@@ -46,17 +45,14 @@ export default function UserManagement() {
       );
     }
 
-    // Plan filter
     if (filterPlan !== "All") {
       result = result.filter((user) => user.subscription?.plan === filterPlan);
     }
 
-    // Status filter
     if (filterStatus !== "All") {
       result = result.filter((user) => user.subscription?.status === filterStatus);
     }
 
-    // Date filter
     if (filterDate !== "All") {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -88,7 +84,6 @@ export default function UserManagement() {
     setFilteredUsers(result);
   }, [searchQuery, filterPlan, filterStatus, filterDate, users]);
 
-  // ✅ Calculate statistics
   useEffect(() => {
     const total = users.length;
     const basic = users.filter(u => u.subscription?.plan === "Basic").length;
@@ -99,7 +94,6 @@ export default function UserManagement() {
     setStats({ total, basic, standard, premium, active });
   }, [users]);
 
-  // ✅ GET: Fetch all users
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -113,7 +107,6 @@ export default function UserManagement() {
     }
   };
 
-  // ✅ PUT: Handle plan upgrade
   const handleUpgradePlan = (user) => {
     setSelectedUser(user);
     setSelectedPlan(user.subscription?.plan || "Basic");
@@ -146,7 +139,6 @@ export default function UserManagement() {
     }
   };
 
-  // ✅ DELETE: Remove user
   const handleDeleteUser = async (userId) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
 
@@ -168,10 +160,6 @@ export default function UserManagement() {
     }
   };
 
-  console.log("useruser",users);
-  
-
-  // ✅ POST: Add new user
   const handleAddUser = async () => {
     if (!newUser.userId || !newUser.email) {
       alert("Please enter both User ID and Email");
@@ -198,7 +186,25 @@ export default function UserManagement() {
     }
   };
 
-  // Clear all filters
+  const handleViewPosts = async (user) => {
+    setViewingUserPosts(user);
+    setLoadingPosts(true);
+    try {
+      const res = await fetch(`/api/user-details?userId=${user.userId}`);
+      const data = await res.json();
+      if (data.success) {
+        setUserPosts(data.posts || []);
+      } else {
+        setUserPosts([]);
+      }
+    } catch (err) {
+      console.error("Error fetching user posts:", err);
+      setUserPosts([]);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
   const clearFilters = () => {
     setSearchQuery("");
     setFilterPlan("All");
@@ -221,7 +227,6 @@ export default function UserManagement() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -238,7 +243,6 @@ export default function UserManagement() {
           </button>
         </div>
 
-        {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between">
@@ -293,10 +297,8 @@ export default function UserManagement() {
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search Bar */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -308,7 +310,6 @@ export default function UserManagement() {
               />
             </div>
 
-            {/* Plan Filter */}
             <div className="relative">
               <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <select
@@ -323,7 +324,6 @@ export default function UserManagement() {
               </select>
             </div>
 
-            {/* Status Filter */}
             <div className="relative">
               <select
                 value={filterStatus}
@@ -336,7 +336,6 @@ export default function UserManagement() {
               </select>
             </div>
 
-            {/* Date Filter */}
             <div className="relative">
               <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <select
@@ -352,7 +351,6 @@ export default function UserManagement() {
               </select>
             </div>
 
-            {/* Clear Filters */}
             {(searchQuery || filterPlan !== "All" || filterStatus !== "All" || filterDate !== "All") && (
               <button
                 onClick={clearFilters}
@@ -364,7 +362,6 @@ export default function UserManagement() {
             )}
           </div>
 
-          {/* Active Filters Info */}
           {filteredUsers.length !== users.length && (
             <div className="mt-4 text-sm text-gray-600">
               Showing <span className="font-semibold text-indigo-600">{filteredUsers.length}</span> of {users.length} users
@@ -372,7 +369,6 @@ export default function UserManagement() {
           )}
         </div>
 
-        {/* Users Table */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -403,9 +399,8 @@ export default function UserManagement() {
                         </div>
                       </div>
                     </td>
-                     <td className="px-6 py-4">
+                    <td className="px-6 py-4">
                       <div className="space-y-1">
-                       
                         {user.fullName && (
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <User2Icon size={14} className="text-gray-400" />
@@ -533,6 +528,14 @@ export default function UserManagement() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button
+                          onClick={() => handleViewPosts(user)}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                          title="View Details"
+                        >
+                          <Eye size={16} />
+                          <span className="text-sm font-medium">View Details</span>
+                        </button>
+                        <button
                           onClick={() => handleUpgradePlan(user)}
                           className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all"
                           title="Upgrade Plan"
@@ -566,7 +569,6 @@ export default function UserManagement() {
           </div>
         </div>
 
-        {/* Upgrade Plan Modal */}
         {selectedUser && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl transform transition-all">
@@ -634,7 +636,6 @@ export default function UserManagement() {
           </div>
         )}
 
-        {/* Add User Modal */}
         {addingUser && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
@@ -713,7 +714,132 @@ export default function UserManagement() {
             </div>
           </div>
         )}
-      </div>
+
+        {viewingUserPosts && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">User Posts</h2>
+                  <p className="text-gray-600 text-sm mt-1">{viewingUserPosts.email}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setViewingUserPosts(null);
+                    setUserPosts([]);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 mb-6">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Wallet Balance</p>
+                    <p className="text-2xl font-bold text-indigo-600">
+                      {viewingUserPosts.wallet || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Total Posts</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {loadingPosts ? "..." : userPosts.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Plan</p>
+                    <p className="text-2xl font-bold text-pink-600">
+                      {viewingUserPosts.subscription?.plan || "Basic"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {loadingPosts ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+                  </div>
+                ) : userPosts.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ImageIcon size={48} className="mx-auto mb-3 text-gray-300" />
+                    <p className="text-gray-500 font-medium">No posts yet</p>
+                    <p className="text-gray-400 text-sm">This user hasn't created any posts</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {userPosts.map((post, index) => (
+                     <div
+  key={post._id || index}
+  className="relative group bg-gray-100 rounded-xl overflow-hidden aspect-square hover:shadow-lg transition-all cursor-pointer"
+  onClick={() => window.open(post.aiOutput, "_blank")}
+>
+  <img
+    src={post.aiOutput}
+    alt={`Post ${index + 1}`}
+    className="w-full h-full object-cover"
+    onError={(e) => {
+      e.target.src =
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f4f6' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' font-size='16' text-anchor='middle' dy='.3em' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+    }}
+  />
+
+  {/* Overlay on hover */}
+  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+    <div className="text-white text-center">
+      <ZoomIn size={32} className="mx-auto mb-2" />
+      <p className="text-xs font-medium">Post #{index + 1}</p>
+      {post.description && (
+        <p className="text-xs mt-1 px-2 line-clamp-2">{post.description}</p>
+      )}
     </div>
-  );
-}
+  </div>
+</div>
+
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setViewingUserPosts(null);
+                    setUserPosts([]);
+                  }}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {fullViewImage && (
+          <div 
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+            onClick={() => setFullViewImage(null)}
+          >
+            <div className="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
+              <button
+                onClick={() => setFullViewImage(null)}
+                className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-sm z-10"
+              >
+                <X size={24} />
+              </button>
+              <img
+                src={fullViewImage}
+                alt="Full view"
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
+        </div> 
+        </div>
+  )
+}   

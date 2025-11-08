@@ -24,7 +24,6 @@ export default function AdminLogin() {
       });
 
       const data = await res.json();
-      console.log("Login Response:", data);
 
       setLoading(false);
 

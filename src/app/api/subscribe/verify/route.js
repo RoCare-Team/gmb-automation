@@ -34,7 +34,6 @@ export async function POST(req) {
 
     // 🔹 Query using custom userId field
     const user = await User.findOne({ userId }); // <--- use userId, not _id
-    console.log("user",user);
     
     if (!user) {
       return new Response(

@@ -834,7 +834,6 @@ const handlePost = async (post) => {
     const subscription = userData.subscription || {};
     const walletBalance = userData.wallet || 0;
 
-    console.log("userData",userData);
     
 
     setUserWallet(walletBalance);
@@ -893,7 +892,6 @@ const handlePost = async (post) => {
 
     // 5️⃣ If post success → Deduct coins
     if (response.ok) {
-      console.log("Webhook success:", data);
       showToast("Post successfully sent!", "success");
       setShowSuccess(true);
 

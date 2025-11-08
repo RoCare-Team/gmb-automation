@@ -30,7 +30,6 @@ export async function POST(req) {
 
       const url = `https://api.savshka.co.in/api/sms?key=${key}&from=${from}&to=${phone}&body=${encodedMsg}&entityid=${entityid}&templateid=${tmpid}`;
 
-      console.log("Sending OTP:", url);
 
       await axios.get(url).catch(() => {
         throw new Error("Failed to send OTP via Savshka");

@@ -435,19 +435,20 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
             </div>
           )}
 
-          {post.status === "approved" && (
-            <div className="space-y-3">
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
-                <button
-                  onClick={() => onOpenModal(post)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base cursor-pointer"
-                >
-                  <Send className="w-5 h-5" />
-                  Post Now
-                </button>
-              </div>
-            </div>
-          )}
+        {(post.status === "approved" || post.status === "posted") && (
+  <div className="space-y-3">
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
+      <button
+        onClick={() => onOpenModal(post)}
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base cursor-pointer"
+      >
+        <Send className="w-5 h-5" />
+        {post.status === "posted" ? "Again Post" : "Post Now"}
+      </button>
+    </div>
+  </div>
+)}
+
 
           {post.status === "scheduled" && (
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-5 space-y-4">
@@ -479,14 +480,7 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
             </div>
           )}
 
-          {post.status === "posted" && (
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-5">
-              <div className="flex items-center justify-center gap-2 text-purple-700">
-                <CheckCircle className="w-6 h-6" />
-                <p className="font-bold text-lg">Successfully Posted!</p>
-              </div>
-            </div>
-          )}
+         
         </div>
       </div>
     </div>
@@ -793,7 +787,6 @@ export default function PostManagement() {
   };
 
   const handleCheckboxChange = (location) => {
-    console.log("locaaaa",location);
     
     setSelectedLocations((prev) => {
       const exists = prev.find((loc) => loc.locationId === location.locationId);
@@ -820,7 +813,6 @@ export default function PostManagement() {
     setIsModalOpen(true);
   };
 
-  console.log("Ssssssssssssss",selectedLocations);
   
 
   const handleConfirmPost = async () => {
