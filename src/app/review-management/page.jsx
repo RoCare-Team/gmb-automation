@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { toast, Toaster } from "react-hot-toast";
 
 export default function DashboardPage() {
   const [reviews, setReviews] = useState([]);
@@ -27,17 +28,8 @@ export default function DashboardPage() {
   const [hasLoadedReviews, setHasLoadedReviews] = useState(false);
   const reviewsPerPage = 5;
 
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-
-  useEffect(() => {
-    const plan = localStorage.getItem("plan");
-    const normalizedPlan = plan ? plan.trim() : null;
-    setUserPlan(normalizedPlan);
-    setCheckingPlan(false);
-    
-    console.log("User plan detected:", normalizedPlan);
-  }, []);
 
   const fetchReviews = async () => {
     try {
@@ -46,7 +38,9 @@ export default function DashboardPage() {
       const token = session?.accessToken;
 
       if (!locationDetails.length || !token) {
+        console.log("Missing data:", { hasLocationDetails: locationDetails.length > 0, hasToken: !!token });
         setLoading(false);
+        setHasLoadedReviews(true);
         return;
       }
 
@@ -77,27 +71,39 @@ export default function DashboardPage() {
         }
       } while (pageToken);
 
-      // Sort reviews: unanswered first (no reply or empty comment), then answered
+      // Sort reviews: latest first (by createTime)
       const sortedReviews = allReviews.sort((a, b) => {
-        const aHasReply = a.reviewReply && a.reviewReply.comment && a.reviewReply.comment.trim() !== "";
-        const bHasReply = b.reviewReply && b.reviewReply.comment && b.reviewReply.comment.trim() !== "";
-        
-        // If a doesn't have reply and b does, a comes first (return -1)
-        if (!aHasReply && bHasReply) return -1;
-        // If a has reply and b doesn't, b comes first (return 1)
-        if (aHasReply && !bHasReply) return 1;
-        // Otherwise, maintain original order
-        return 0;
+        const dateA = new Date(a.createTime);
+        const dateB = new Date(b.createTime);
+        return dateB - dateA; // Newest first
       });
 
       setReviews(sortedReviews);
       setHasLoadedReviews(true);
     } catch (err) {
       console.error("Error fetching reviews:", err);
+      setHasLoadedReviews(true);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const plan = localStorage.getItem("Plan");
+    const normalizedPlan = plan ? plan.trim() : null;
+    setUserPlan(normalizedPlan);
+    setCheckingPlan(false);
+    
+    console.log("User plan detected:", normalizedPlan);
+  }, []);
+
+  useEffect(() => {
+    // Auto-load reviews when session is ready and user is not on Basic plan
+    if (status === "authenticated" && userPlan && userPlan.toLowerCase() !== "basic" && !hasLoadedReviews) {
+      console.log("Auto-fetching reviews...");
+      fetchReviews();
+    }
+  }, [status, userPlan, hasLoadedReviews]);
 
   const totalPages = Math.ceil(reviews.length / reviewsPerPage);
   const startIdx = (currentPage - 1) * reviewsPerPage;
@@ -122,7 +128,6 @@ export default function DashboardPage() {
     try {
       setGeneratingAI(true);
       
-      // Destructure review details
       const { 
         name, 
         reviewId, 
@@ -139,8 +144,6 @@ export default function DashboardPage() {
         "ONE": "One"
       };
 
-      // Extract account ID and location ID from review.name
-      // Format: "accounts/{accountId}/locations/{locationId}/reviews/{reviewId}"
       const [, accountId, , locationId] = name?.split('/') || [];
 
       console.log("Sending AI Reply Request:", {
@@ -167,16 +170,29 @@ export default function DashboardPage() {
       });
 
       const data = await res.json();
+
+      console.log("datata",data);
       
-      if (res.ok && data.reply) {
+      
+      if (data.status === true) {
         setLocalReply(data.reply);
         setShowReplyInput(true);
+        toast.success("AI reply generated successfully!", {
+          duration: 3000,
+          position: "top-center",
+        });
       } else {
-        alert("Failed to generate AI reply. Please try manual reply.");
+        toast.error("Failed to generate AI reply. Please try manual reply.", {
+          duration: 3000,
+          position: "top-center",
+        });
       }
     } catch (err) {
       console.error("AI Reply Error:", err);
-      alert("Error generating AI reply. Please try manual reply.");
+      toast.error("Error generating AI reply. Please try manual reply.", {
+        duration: 3000,
+        position: "top-center",
+      });
     } finally {
       setGeneratingAI(false);
     }
@@ -193,18 +209,57 @@ export default function DashboardPage() {
 
       try {
         setReplyingTo(review.reviewId);
-        const res = await fetch("/api/post-reply", {
+        
+        const { name, reviewId, starRating, reviewer } = review;
+        const starRatingMap = {
+          "FIVE": "Five",
+          "FOUR": "Four",
+          "THREE": "Three",
+          "TWO": "Two",
+          "ONE": "One"
+        };
+        
+        const [, accountId, , locationId] = name?.split('/') || [];
+        
+        const res = await fetch("https://n8n.srv968758.hstgr.cloud/webhook/45f3a8db-b8d2-46ec-b692-4ec5fe90acc7", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reviewId: review.reviewId, comment: localReply }),
+          body: JSON.stringify({
+            access_token: session?.accessToken,
+            acc_id: accountId,
+            locationIds: locationId,
+            Reviewer_Name: reviewer?.displayName || "Anonymous",
+            Star_Rating: starRatingMap[starRating] || "Five",
+            Review_Content: review.comment || "No comment provided",
+            Review_ID: reviewId,
+            reply_review: localReply
+          }),
         });
-        if (res.ok) {
-          fetchReviews();
+        
+        const data = await res.json();
+        console.log("datadata",data);
+        
+        
+        if (res.ok && data.status === true) {
+          toast.success("Reply posted successfully!", {
+            duration: 3000,
+            position: "top-center",
+          });
+          await fetchReviews();
           setShowReplyInput(false);
           setLocalReply("");
+        } else {
+          toast.error("Failed to post reply. Please try again.", {
+            duration: 3000,
+            position: "top-center",
+          });
         }
       } catch (err) {
         console.error(err);
+        toast.error("Error posting reply. Please try again.", {
+          duration: 3000,
+          position: "top-center",
+        });
       } finally {
         setReplyingTo(null);
       }
@@ -290,7 +345,7 @@ export default function DashboardPage() {
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={handleManualReply}
-                    disabled={isReplying || !localReply.trim()}
+                    disabled={isReplying || !localReply?.trim()}
                     className="bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-all inline-flex items-center gap-2 disabled:opacity-50"
                   >
                     {isReplying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -311,7 +366,7 @@ export default function DashboardPage() {
     );
   };
 
-  if (checkingPlan) {
+  if (checkingPlan || status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 flex items-center justify-center">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
@@ -319,63 +374,65 @@ export default function DashboardPage() {
     );
   }
 
-  if (userPlan && userPlan.toLowerCase() === "basic") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full">
-          <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-200">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Lock className="w-10 h-10 text-white" />
-            </div>
+  // if (userPlan && userPlan.toLowerCase() === "test") {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 flex items-center justify-center p-6">
+  //       <Toaster />
+  //       <div className="max-w-4xl w-full">
+  //         <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-200">
+  //           <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+  //             <Lock className="w-10 h-10 text-white" />
+  //           </div>
             
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">
-              Upgrade Your Plan
-            </h1>
+  //           <h1 className="text-4xl font-bold text-gray-900 mb-3">
+  //             Upgrade Your Plan
+  //           </h1>
             
-            <p className="text-lg text-gray-600 mb-8">
-              Review management is not available on the Basic plan. Upgrade to access premium features.
-            </p>
+  //           <p className="text-lg text-gray-600 mb-8">
+  //             Review management is not available on the Basic plan. Upgrade to access premium features.
+  //           </p>
 
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 mb-8 text-left">
-              <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-                Premium Features
-              </h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700">View and manage all customer reviews in one place</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700">AI-powered reply suggestions for faster responses</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700">Multi-location review management support</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700">Advanced analytics and customer insights</span>
-                </li>
-              </ul>
-            </div>
+  //           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 mb-8 text-left">
+  //             <h3 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
+  //               <Sparkles className="w-5 h-5 text-blue-600" />
+  //               Premium Features
+  //             </h3>
+  //             <ul className="space-y-3">
+  //               <li className="flex items-start gap-3">
+  //                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+  //                 <span className="text-gray-700">View and manage all customer reviews in one place</span>
+  //               </li>
+  //               <li className="flex items-start gap-3">
+  //                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+  //                 <span className="text-gray-700">AI-powered reply suggestions for faster responses</span>
+  //               </li>
+  //               <li className="flex items-start gap-3">
+  //                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+  //                 <span className="text-gray-700">Multi-location review management support</span>
+  //               </li>
+  //               <li className="flex items-start gap-3">
+  //                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+  //                 <span className="text-gray-700">Advanced analytics and customer insights</span>
+  //               </li>
+  //             </ul>
+  //           </div>
 
-            <button
-              onClick={() => router.push("/subscription")}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg px-12 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 inline-flex items-center gap-3"
-            >
-              <Zap className="w-5 h-5" />
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  //           <button
+  //             onClick={() => router.push("/subscription")}
+  //             className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg px-12 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 inline-flex items-center gap-3"
+  //           >
+  //             <Zap className="w-5 h-5" />
+  //             Upgrade Now
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+      <Toaster />
       <div className="max-w-6xl mx-auto p-6 pt-24">
         <div className="mb-10">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Customer Reviews</h1>
@@ -387,30 +444,13 @@ export default function DashboardPage() {
         {!hasLoadedReviews ? (
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-                <RefreshCw className="w-12 h-12 text-white" />
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl animate-pulse">
+                <Loader2 className="w-12 h-12 text-white animate-spin" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Load Your Reviews</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Loading Reviews</h2>
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                Click the button below to fetch all your customer reviews from Google Business
+                Fetching your customer reviews from Google Business...
               </p>
-              <button
-                onClick={fetchReviews}
-                disabled={loading}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg px-10 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 inline-flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    Loading Reviews...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-6 h-6" />
-                    Get Reviews
-                  </>
-                )}
-              </button>
             </div>
           </div>
         ) : reviews.length === 0 ? (
