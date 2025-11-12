@@ -15,6 +15,7 @@ export default function UserManagement() {
   const [userPosts, setUserPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [fullViewImage, setFullViewImage] = useState(null);
+  const [connectedBusinessUsers, setConnectedBusinessUsers] = useState([]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPlan, setFilterPlan] = useState("All");
@@ -31,6 +32,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    fetchConnectedBusinessUsers();
   }, []);
 
   useEffect(() => {
@@ -105,6 +107,24 @@ export default function UserManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchConnectedBusinessUsers = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/connectedBussiness");
+      const data = await res.json();
+      if (data.success && data.users) {
+        setConnectedBusinessUsers(data.users);
+      }
+    } catch (err) {
+      console.error("Error fetching connected business users:", err);
+    }
+  };
+
+  const isUserConnected = (email) => {
+    return connectedBusinessUsers.some(
+      (connectedUser) => connectedUser.email?.toLowerCase() === email?.toLowerCase()
+    );
   };
 
   const handleUpgradePlan = (user) => {
@@ -223,6 +243,7 @@ export default function UserManagement() {
     );
   }
 
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -379,6 +400,7 @@ export default function UserManagement() {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Contact</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Plan</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Business Status</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created Date</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subscribed</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Expiry Date</th>
@@ -453,6 +475,20 @@ export default function UserManagement() {
                           user.subscription?.status === "active" ? "bg-green-500" : "bg-gray-500"
                         }`}></div>
                         {user.subscription?.status === "active" ? "Paid User" : "Free Plan"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          isUserConnected(user.email)
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${
+                          isUserConnected(user.email) ? "bg-blue-500 animate-pulse" : "bg-gray-400"
+                        }`}></div>
+                        {isUserConnected(user.email) ? "Connected" : "Not Connected"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -555,7 +591,7 @@ export default function UserManagement() {
                 ))}
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan="9" className="text-center py-12">
+                    <td colSpan="10" className="text-center py-12">
                       <div className="text-gray-400">
                         <Search size={48} className="mx-auto mb-3 opacity-50" />
                         <p className="text-lg font-medium">No users found</p>
@@ -771,33 +807,31 @@ export default function UserManagement() {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {userPosts.map((post, index) => (
-                     <div
-  key={post._id || index}
-  className="relative group bg-gray-100 rounded-xl overflow-hidden aspect-square hover:shadow-lg transition-all cursor-pointer"
-  onClick={() => window.open(post.aiOutput, "_blank")}
->
-  <img
-    src={post.aiOutput}
-    alt={`Post ${index + 1}`}
-    className="w-full h-full object-cover"
-    onError={(e) => {
-      e.target.src =
-        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f4f6' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' font-size='16' text-anchor='middle' dy='.3em' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
-    }}
-  />
+                      <div
+                        key={post._id || index}
+                        className="relative group bg-gray-100 rounded-xl overflow-hidden aspect-square hover:shadow-lg transition-all cursor-pointer"
+                        onClick={() => window.open(post.aiOutput, "_blank")}
+                      >
+                        <img
+                          src={post.aiOutput}
+                          alt={`Post ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src =
+                              "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23f3f4f6' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' font-size='16' text-anchor='middle' dy='.3em' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E";
+                          }}
+                        />
 
-  {/* Overlay on hover */}
-  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-    <div className="text-white text-center">
-      <ZoomIn size={32} className="mx-auto mb-2" />
-      <p className="text-xs font-medium">Post #{index + 1}</p>
-      {post.description && (
-        <p className="text-xs mt-1 px-2 line-clamp-2">{post.description}</p>
-      )}
-    </div>
-  </div>
-</div>
-
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <ZoomIn size={32} className="mx-auto mb-2" />
+                            <p className="text-xs font-medium">Post #{index + 1}</p>
+                            {post.description && (
+                              <p className="text-xs mt-1 px-2 line-clamp-2">{post.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -839,7 +873,7 @@ export default function UserManagement() {
             </div>
           </div>
         )}
-        </div> 
-        </div>
-  )
-}   
+      </div>
+    </div>
+  );
+}

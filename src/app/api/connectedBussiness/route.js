@@ -10,6 +10,9 @@ export async function GET() {
     const db = client.db("gmb_dashboard");
     const usersCollection = db.collection("users");
 
+    console.log("usersCollectionusersCollection",usersCollection);
+    
+
     // Fetch all users in DESCENDING order (latest first)
     const users = await usersCollection
       .find()
@@ -21,7 +24,7 @@ export async function GET() {
       const isConnected = !!project.refreshToken;
 
       return {
-        _id: user._id,
+        _id: user.userId,
         name: user.name || "N/A",
         email: user.email || "N/A",
         googleId: project.googleId || null,

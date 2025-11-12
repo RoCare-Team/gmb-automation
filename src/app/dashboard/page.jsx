@@ -23,6 +23,7 @@ import {
   Calendar,
   Search,
   Hash,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -97,6 +98,36 @@ export async function checkVoiceOfMerchant(accessToken, locationName) {
     return data;
   } catch (err) {
     return { hasVoiceOfMerchant: false, hasBusinessAuthority: false };
+  }
+}
+
+// --- Admin Storage Helper ---
+export async function storeUserListingsForAdmin(userEmail, listings) {
+  console.log("userEmaillll",userEmail,listings);
+  
+  try {
+    const response = await fetch('/api/admin/saveBussiness', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userEmail,
+        listings,
+        timestamp: new Date().toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to store listings for admin');
+    }
+
+    const data = await response.json();
+    console.log('Listings stored for admin:', data);
+    return data;
+  } catch (error) {
+    console.error('Error storing listings for admin:', error);
+    // Don't throw error - admin storage failure shouldn't break user experience
   }
 }
 
@@ -194,7 +225,6 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
     return diffDays;
   };
 
-  // Process search keywords data
   const topKeywords = searchKeywords?.searchKeywordsCounts 
     ? searchKeywords.searchKeywordsCounts
         .sort((a, b) => {
@@ -208,7 +238,6 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn ml-20 mt-20">
       <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-5 flex justify-between items-center rounded-t-2xl flex-shrink-0">
           <div className="flex items-center gap-3">
             <BarChart3 className="w-6 h-6" />
@@ -225,9 +254,7 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
           </button>
         </div>
 
-        {/* Content - Scrollable */}
         <div className="p-6 overflow-y-auto flex-1">
-          {/* Date Range Selector */}
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-5 mb-6">
             <div className="flex items-center gap-3 mb-4">
               <Calendar className="w-5 h-5 text-blue-600" />
@@ -272,9 +299,7 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
             </div>
           ) : insights && insights.multiDailyMetricTimeSeries ? (
             <>
-              {/* Metrics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {/* Total Impressions */}
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-5 hover:shadow-lg transition">
                   <div className="flex items-center justify-between mb-3">
                     <div className="bg-purple-600 p-3 rounded-lg">
@@ -290,7 +315,6 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
                   </div>
                 </div>
 
-                {/* Website Clicks */}
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 hover:shadow-lg transition">
                   <div className="flex items-center justify-between mb-3">
                     <div className="bg-blue-600 p-3 rounded-lg">
@@ -302,7 +326,6 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
                   <p className="text-xs text-gray-600">Users visited your website</p>
                 </div>
 
-                {/* Call Clicks */}
                 <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-5 hover:shadow-lg transition">
                   <div className="flex items-center justify-between mb-3">
                     <div className="bg-green-600 p-3 rounded-lg">
@@ -314,7 +337,6 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
                   <p className="text-xs text-gray-600">Users clicked to call</p>
                 </div>
 
-                {/* Direction Requests */}
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-5 hover:shadow-lg transition">
                   <div className="flex items-center justify-between mb-3">
                     <div className="bg-orange-600 p-3 rounded-lg">
@@ -327,7 +349,6 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
                 </div>
               </div>
 
-              {/* Engagement Summary */}
               <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-xl p-6 mb-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-indigo-600" />
@@ -340,9 +361,9 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-indigo-700">
-{totalImpressions > 0
-  ? (((totalWebsiteClicks + totalCalls + totalDirections) / totalImpressions) * 100).toFixed(2) + "%"
-  : "0%"}
+                      {totalImpressions > 0
+                        ? (((totalWebsiteClicks + totalCalls + totalDirections) / totalImpressions) * 100).toFixed(2) + "%"
+                        : "0%"}
                     </div>
                     <div className="text-xs text-gray-600 mt-1">Click Rate</div>
                   </div>
@@ -359,61 +380,58 @@ function InsightsModal({ isOpen, onClose, insights, listingTitle, loading, start
                 </div>
               </div>
 
-              {/* Search Keywords Section */}
-             <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-200 rounded-xl p-6 mb-6">
-  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-    <Search className="w-5 h-5 text-cyan-600" />
-    Top Search Keywords
-  </h3>
+              <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-2 border-cyan-200 rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Search className="w-5 h-5 text-cyan-600" />
+                  Top Search Keywords
+                </h3>
 
-  {searchKeywordsLoading ? (
-    <div className="flex items-center justify-center py-8">
-      <CircularProgress size={40} thickness={4} sx={{ color: "#0891b2" }} />
-    </div>
-  ) : topKeywords.length > 0 ? (
-    <div className="space-y-3">
-      {topKeywords.map((keyword, idx) => {
-        const value = keyword.insightsValue?.value || 0;
-        const maxValue = topKeywords[0]?.insightsValue?.value || 1;
-        const percentage = (value / maxValue) * 100;
+                {searchKeywordsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <CircularProgress size={40} thickness={4} sx={{ color: "#0891b2" }} />
+                  </div>
+                ) : topKeywords.length > 0 ? (
+                  <div className="space-y-3">
+                    {topKeywords.map((keyword, idx) => {
+                      const value = keyword.insightsValue?.value || 0;
+                      const maxValue = topKeywords[0]?.insightsValue?.value || 1;
+                      const percentage = (value / maxValue) * 100;
 
-        return (
-          <div key={idx} className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="bg-cyan-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                  {idx + 1}
-                </span>
-                <span className="font-semibold text-gray-900">{keyword.searchKeyword}</span>
+                      return (
+                        <div key={idx} className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="bg-cyan-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <span className="font-semibold text-gray-900">{keyword.searchKeyword}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Hash className="w-4 h-4 text-cyan-600" />
+                              <div className="flex flex-col items-end">
+                                <span className="text-lg font-bold text-cyan-700">{value.toLocaleString()}</span>
+                                <span className="text-xs text-gray-500">Impressions</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Search className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600">No search keyword data available</p>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Hash className="w-4 h-4 text-cyan-600" />
-                <div className="flex flex-col items-end">
-                  <span className="text-lg font-bold text-cyan-700">{value.toLocaleString()}</span>
-                  <span className="text-xs text-gray-500">Impressions</span>
-                </div>
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${percentage}%` }}
-              ></div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  ) : (
-    <div className="text-center py-8">
-      <Search className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-      <p className="text-gray-600">No search keyword data available</p>
-    </div>
-  )}
-</div>
 
-
-              {/* Daily Breakdown */}
               {callClicks?.timeSeries?.datedValues && (
                 <div className="bg-white border-2 border-gray-200 rounded-xl p-5">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Daily Activity</h3>
@@ -467,8 +485,8 @@ export default function DashboardPage() {
   const [noAccountsFound, setNoAccountsFound] = useState(false);
   const [searchKeywordsData, setSearchKeywordsData] = useState(null);
   const [searchKeywordsLoading, setSearchKeywordsLoading] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState(""); // For showing cache info
   
-  // Date range state
   const [insightsStartDate, setInsightsStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30);
@@ -482,20 +500,38 @@ export default function DashboardPage() {
   const fetchInProgress = useRef(false);
   const dataCache = useRef({});
 
-  // Cache key generator
+  // Enhanced cache with expiry time (10 minutes)
+  const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+
   const getCacheKey = (email) => `gmb_data_${email}`;
 
-  // Load from cache
+  // Load from cache with status reporting
   const loadFromCache = useCallback((email) => {
     const cacheKey = getCacheKey(email);
     const cached = dataCache.current[cacheKey];
     
-    if (cached && cached.timestamp && Date.now() - cached.timestamp < 5 * 60 * 1000) {
-      console.log("Loading from cache:", email);
-      setAccounts(cached.accounts || []);
-      setNoAccountsFound(cached.noAccountsFound || false);
-      setInitialFetchDone(true);
-      return true;
+    if (cached && cached.timestamp) {
+      const age = Date.now() - cached.timestamp;
+      const ageMinutes = Math.floor(age / 60000);
+      
+      if (age < CACHE_EXPIRY_MS) {
+        console.log(`✅ Loading from cache (${ageMinutes} min old):`, email);
+        setAccounts(cached.accounts || []);
+        setNoAccountsFound(cached.noAccountsFound || false);
+        setInitialFetchDone(true);
+        setCacheStatus(`Loaded from cache (${ageMinutes} min ago)`);
+        
+        // Auto-refresh if cache is older than 5 minutes
+        if (age > 5 * 60 * 1000) {
+          toast.info("Cache data is old. Refreshing in background...", { duration: 2000 });
+          setTimeout(() => fetchInitialData(true), 1000);
+        }
+        
+        return true;
+      } else {
+        console.log("⚠️ Cache expired, will fetch fresh data");
+        setCacheStatus("Cache expired, fetching fresh data...");
+      }
     }
     return false;
   }, []);
@@ -508,11 +544,23 @@ export default function DashboardPage() {
       noAccountsFound: noAccounts,
       timestamp: Date.now()
     };
+    console.log("💾 Data cached for:", email);
+    setCacheStatus("Data refreshed and cached");
+  }, []);
+
+  // Clear cache function
+  const clearCache = useCallback(() => {
+    dataCache.current = {};
+    toast.success("Cache cleared successfully!");
+    setCacheStatus("Cache cleared");
   }, []);
 
   // --- Fetch All Accounts & Locations ---
   const fetchInitialData = useCallback(async (forceRefresh = false) => {
-    if (!session?.accessToken || !session?.user?.email) return;
+    if (!session?.accessToken || !session?.user?.email) {
+      console.log("⚠️ No session or access token available");
+      return;
+    }
     
     const userEmail = session.user.email;
 
@@ -522,37 +570,43 @@ export default function DashboardPage() {
     }
 
     if (fetchInProgress.current && !forceRefresh) {
-      console.log("Fetch already in progress, skipping...");
+      console.log("⏳ Fetch already in progress, skipping...");
       return;
     }
 
     fetchInProgress.current = true;
     setLoading(true);
     setNoAccountsFound(false);
+    setCacheStatus("Fetching fresh data from Google...");
     
     const token = session.accessToken;
 
     try {
-      console.log("Fetching GMB data for:", userEmail);
+      console.log("🔄 Fetching GMB data for:", userEmail);
       const accountsData = await fetchGMBAccounts(token);
       
-      console.log("Accounts fetched:", accountsData.length);
+      console.log(`✅ Accounts fetched: ${accountsData.length}`);
 
       if (accountsData.length === 0) {
+        console.log("❌ No accounts found for this user");
         setAccounts([]);
         setNoAccountsFound(true);
         saveToCache(userEmail, [], true);
         setInitialFetchDone(true);
         setLoading(false);
         fetchInProgress.current = false;
+        setCacheStatus("No accounts found");
         return;
       }
 
       const accountId = accountsData[0].name.replace("accounts/", "");
       
+      console.log("🔄 Fetching locations for account:", accountId);
       const allLocations = await fetchAllLocationsByAccount(token, accountId);
+      console.log(`✅ Locations fetched: ${allLocations.length}`);
 
       if (allLocations.length > 0) {
+        console.log("🔄 Checking verification status for all locations...");
         const locationsWithVoM = await Promise.all(
           allLocations.map(async (loc) => {
             const vomStatus = await checkVoiceOfMerchant(token, loc.name);
@@ -570,16 +624,25 @@ export default function DashboardPage() {
         setAccounts(newAccounts);
         setNoAccountsFound(false);
         saveToCache(userEmail, newAccounts, false);
+        
+        // Store for admin
+        console.log("📤 Storing listings for admin dashboard...");
+        await storeUserListingsForAdmin(userEmail, locationsWithVoM);
+        
         toast.success(`✅ Loaded ${locationsWithVoM.length} listings successfully!`);
+        setCacheStatus(`${locationsWithVoM.length} listings loaded and cached`);
       } else {
+        console.log("❌ No locations found for this account");
         setAccounts([]);
         setNoAccountsFound(true);
         saveToCache(userEmail, [], true);
+        setCacheStatus("No listings found");
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("❌ Error fetching data:", error);
       toast.error("Failed to load listings. Please try again.");
       setNoAccountsFound(true);
+      setCacheStatus("Error fetching data");
     }
 
     setInitialFetchDone(true);
@@ -591,16 +654,13 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user?.email && status === "authenticated") {
       if (!initialFetchDone && !fetchInProgress.current) {
-        console.log("Initial fetch triggered for:", session.user.email);
+        console.log("🚀 Initial fetch triggered for:", session.user.email);
         fetchInitialData();
       }
     }
   }, [session?.user?.email, status, initialFetchDone, fetchInitialData]);
 
-  
-
   const handleListingData = (listing) => {
-    
     const dataToSend = {
       locality: listing?.storefrontAddress?.locality || "",
       website: listing?.websiteUri || "",
@@ -612,7 +672,7 @@ export default function DashboardPage() {
     router.push(`/post-management/${listing.name}`);
   };
 
-  // --- Handle View Insights with Date Range and Search Keywords ---
+  // Handle View Insights
   const handleViewInsights = async (listing, customStartDate = null, customEndDate = null) => {
     const locationId = listing.name.split("/")[1];
     
@@ -628,19 +688,16 @@ export default function DashboardPage() {
     const endDate = customEndDate || insightsEndDate;
 
     try {
-      // Fetch insights
       const insights = await fetchLocationInsights(session.accessToken, locationId, startDate, endDate);
       setInsightsData(insights);
       setInsightsLoading(false);
 
-      // Fetch search keywords for the last 4 months
       const currentDate = new Date();
       const startMonth = {
         year: currentDate.getFullYear(),
-        month: currentDate.getMonth() - 3 // 4 months ago
+        month: currentDate.getMonth() - 3
       };
       
-      // Adjust year if month goes negative
       if (startMonth.month <= 0) {
         startMonth.month += 12;
         startMonth.year -= 1;
@@ -686,7 +743,7 @@ export default function DashboardPage() {
     }
   };
 
-  // --- Summary Update ---
+  // Summary Update & Store location details
   useEffect(() => {
     if (accounts.length > 0) {
       const allListings = accounts.flatMap((acc) => acc.listings);
@@ -699,7 +756,7 @@ export default function DashboardPage() {
         const title = item.title || "";
         const websiteUrl = item.websiteUri || "";
 
-        return { locationId, accountId, locality, address, title,websiteUrl };
+        return { locationId, accountId, locality, address, title, websiteUrl };
       });
 
       localStorage.setItem("locationDetails", JSON.stringify(locationDetails));
@@ -712,7 +769,7 @@ export default function DashboardPage() {
     }
   }, [accounts]);
 
-  // --- Add Project ---
+  // Add Project with proper cache clearing
   const handleAddProject = async () => {
     if (!session) {
       await signIn("google", { redirect: false });
@@ -724,10 +781,23 @@ export default function DashboardPage() {
       return;
     }
 
+    // Force refresh to get latest data
     await fetchInitialData(true);
   };
 
-  // --- Verification Badge ---
+  // Manual refresh button handler
+  const handleManualRefresh = async () => {
+    if (!session?.accessToken) {
+      toast.error("Please sign in first");
+      return;
+    }
+    
+    toast.success("Refreshing data...", { duration: 1000 });
+    clearCache();
+    await fetchInitialData(true);
+  };
+
+  // Verification Badge
   const getVerificationBadge = (listing) => {
     const isVerified = listing.hasVoiceOfMerchant === true;
 
@@ -750,7 +820,7 @@ export default function DashboardPage() {
     }
   };
 
-  // --- Filter Listings ---
+  // Filter Listings
   const getFilteredListings = (listings) => {
     if (filterStatus === "verified") {
       return listings.filter((l) => l.hasVoiceOfMerchant === true);
@@ -760,7 +830,7 @@ export default function DashboardPage() {
     return listings;
   };
 
-  // --- Loading State ---
+  // Loading State
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
@@ -773,38 +843,37 @@ export default function DashboardPage() {
   }
 
   // Unauthenticated state
-if (status === "unauthenticated") {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center text-center px-4">
-      <div className="bg-gradient-to-br from-blue-100 to-purple-100 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-md">
-        <Building2 className="w-12 h-12 text-blue-600" />
-      </div>
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center text-center px-4">
+        <div className="bg-gradient-to-br from-blue-100 to-purple-100 w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-md">
+          <Building2 className="w-12 h-12 text-blue-600" />
+        </div>
 
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
-        Login your Business
-      </h1>
-      <p className="text-gray-700 text-base sm:text-lg mb-8">
-        Connect your business account to manage your Google Business Profile
-      </p>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
+          Login your Business
+        </h1>
+        <p className="text-gray-700 text-base sm:text-lg mb-8">
+          Connect your business account to manage your Google Business Profile
+        </p>
 
-      <button
-        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-        className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl hover:opacity-90 transition font-semibold shadow-lg flex items-center justify-center gap-2"
-      >
-        <svg
-          className="w-5 h-5"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 488 512"
-          fill="currentColor"
+        <button
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl hover:opacity-90 transition font-semibold shadow-lg flex items-center justify-center gap-2"
         >
-          <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.9 0 122.4 24.5 165.2 64.9l-66.8 64.9C318.6 109.9 285.1 96 248 96 150.6 96 72 174.6 72 272s78.6 176 176 176c90.1 0 148.4-51.8 160.3-124.6H248v-99.6h240C487.3 232.8 488 247.5 488 261.8z" />
-        </svg>
-        Sign in with Google
-      </button>
-    </div>
-  );
-}
-
+          <svg
+            className="w-5 h-5"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 488 512"
+            fill="currentColor"
+          >
+            <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.9 0 122.4 24.5 165.2 64.9l-66.8 64.9C318.6 109.9 285.1 96 248 96 150.6 96 72 174.6 72 272s78.6 176 176 176c90.1 0 148.4-51.8 160.3-124.6H248v-99.6h240C487.3 232.8 488 247.5 488 261.8z" />
+          </svg>
+          Sign in with Google
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-6">
@@ -833,9 +902,28 @@ if (status === "unauthenticated") {
                 AI GMB Auto Management
               </h1>
               <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base truncate">Welcome back, {session?.user?.name || "User"} 👋</p>
+              {cacheStatus && (
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  {cacheStatus}
+                </p>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 justify-end sm:justify-start">
+            <div className="flex items-center gap-2 sm:gap-4 justify-end sm:justify-start flex-wrap">
+              {/* Refresh Button */}
+              {accounts.length > 0 && (
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={loading}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl shadow-md hover:from-green-700 hover:to-emerald-700 transition-all duration-300 text-sm sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  title="Refresh data from Google"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+              )}
+
               {session && (
                 <button
                   onClick={() => signOut({ callbackUrl: "/dashboard" })}
@@ -877,6 +965,7 @@ if (status === "unauthenticated") {
             <div className="text-center">
               <CircularProgress size={60} thickness={4} sx={{ color: "#3b82f6" }} />
               <p className="text-gray-700 font-semibold mt-6">Loading your listings...</p>
+              <p className="text-gray-500 text-sm mt-2">Fetching data from Google Business Profile</p>
             </div>
           </div>
         )}
@@ -1008,7 +1097,6 @@ if (status === "unauthenticated") {
                     {filteredListings.map((listing, i) => (
                       <div key={i} className="bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden border border-gray-200">
                         <div className="p-4 sm:p-6">
-                          {/* Header Section */}
                           <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
                             <div className="flex-1 min-w-0">
                               <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 truncate">
@@ -1024,7 +1112,6 @@ if (status === "unauthenticated") {
                             </div>
                           </div>
 
-                          {/* Business Details */}
                           <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                             <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-2.5 sm:p-3 rounded-lg border border-blue-200">
                               <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
@@ -1061,7 +1148,6 @@ if (status === "unauthenticated") {
                             </div>
                           </div>
 
-                          {/* Action Buttons */}
                           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <button
                               onClick={() => handleListingData(listing)}

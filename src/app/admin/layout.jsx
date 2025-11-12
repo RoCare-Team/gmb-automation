@@ -11,6 +11,7 @@ export default function AdminLayout({ children }) {
     { name: "Users", icon: <Users size={18} />, href: "/admin/user-management" },
     { name: "Notification", icon: <Users size={18} />, href: "/admin/notification" },
     { name: "Connected Bussiness", icon: <Users size={18} />, href: "/admin/connectedBussiness" },
+    { name: "SAVE Bussiness", icon: <Users size={18} />, href: "/admin/store-bussiness" },
     { name: "Settings", icon: <Settings size={18} />, href: "/admin/settings" },
   ];
 

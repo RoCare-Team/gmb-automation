@@ -19,7 +19,6 @@ const userSchema = new mongoose.Schema(
       expiry: { type: Date },
       status: { type: String, enum: ["active", "inactive"], default: "inactive" },
       maxAccounts: { type: Number, default: 0 },
-
       accounts: [
         {
           googleId: String,
@@ -28,6 +27,9 @@ const userSchema = new mongoose.Schema(
         },
       ],
     },
+
+    connectedBusinessEmail: { type: String, default: null },
+  isBusinessConnected: { type: Boolean, default: false },
 
     // Store OTP temporarily for verification
     otp: { type: String },
