@@ -111,7 +111,7 @@ export default function UserManagement() {
 
   const fetchConnectedBusinessUsers = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/connectedBussiness");
+      const res = await fetch(`/api/connectedBussiness`);
       const data = await res.json();
       if (data.success && data.users) {
         setConnectedBusinessUsers(data.users);
