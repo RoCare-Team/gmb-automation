@@ -119,7 +119,7 @@ const LocationSelectionModal = ({ locations, onClose, onConfirm }) => {
                 <span className="text-lg sm:text-xl">💡</span>
                 <span>
                   <strong>Selected:</strong> {selectedLocations.length} location{selectedLocations.length > 1 ? 's' : ''} 
-                  {' '}• Total posting cost: {selectedLocations.length * 100} coins
+                  {' '}• Total posting cost: {selectedLocations.length * 50} coins
                 </span>
               </p>
             </div>
@@ -997,7 +997,7 @@ export default function PostManagement() {
             Accept: "application/json",
           },
           body: JSON.stringify({
-            account: accountId,
+            account: selectedLocations[0]?.accountId || "",
             locationData: locationData,
             output: post?.aiOutput || "",
             description: post?.description || "",
