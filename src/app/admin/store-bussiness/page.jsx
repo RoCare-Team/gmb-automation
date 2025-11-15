@@ -134,7 +134,7 @@ export default function AdminDashboard() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <Users className="w-8 h-8" />
-              Admin Dashboard
+            Store Bussiness
             </h1>
             <p className="text-indigo-100 mt-2">
               Manage and monitor all user business listings

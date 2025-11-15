@@ -1,7 +1,9 @@
 import Sidebar from "@/components/sidebar";
 
-export default function DashboardLayout({ children }) {
+export default function AssetsManagement({ children }) {
 
+  console.log("children");
+  
   return (
     <div className="flex min-h-screen">
       <Sidebar />

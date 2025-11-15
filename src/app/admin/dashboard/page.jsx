@@ -25,7 +25,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/users", { method: "POST" });
       const data = await res.json();
 
-      
+
 
       if (data.success) {
         setStats(data.stats);
@@ -87,35 +87,35 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-       <div className="bg-white rounded-xl p-5 shadow-md text-gray-800 w-full max-w-sm mx-auto">
-  <h2 className="text-lg font-semibold mb-4 text-gray-900">Plan Distribution</h2>
+        <div className="bg-white rounded-xl p-5 shadow-md text-gray-800 w-full max-w-sm mx-auto">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900">Plan Distribution</h2>
 
-  <div className="flex flex-col gap-3">
-    {/* Basic Plan */}
-    <div className="flex justify-between items-center">
-      <span className="text-gray-700">Basic Plan</span>
-      <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-semibold">
-        {stats.planCounts?.basic || 0}
-      </span>
-    </div>
+          <div className="flex flex-col gap-3">
+            {/* Basic Plan */}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Basic Plan</span>
+              <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-semibold">
+                {stats.planCounts?.basic || 0}
+              </span>
+            </div>
 
-    {/* Standard Plan */}
-    <div className="flex justify-between items-center">
-      <span className="text-gray-700">Standard Plan</span>
-      <span className="px-3 py-1 rounded-full bg-green-100 text-green-600 font-semibold">
-        {stats.planCounts?.standard || 0}
-      </span>
-    </div>
+            {/* Standard Plan */}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Standard Plan</span>
+              <span className="px-3 py-1 rounded-full bg-green-100 text-green-600 font-semibold">
+                {stats.planCounts?.standard || 0}
+              </span>
+            </div>
 
-    {/* Premium Plan */}
-    <div className="flex justify-between items-center">
-      <span className="text-gray-700">Premium Plan</span>
-      <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-600 font-semibold">
-        {stats.planCounts?.premium || 0}
-      </span>
-    </div>
-  </div>
-</div>
+            {/* Premium Plan */}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Premium Plan</span>
+              <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-600 font-semibold">
+                {stats.planCounts?.premium || 0}
+              </span>
+            </div>
+          </div>
+        </div>
 
       </div>
 

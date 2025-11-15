@@ -20,17 +20,7 @@ import {
   Chip,
   useMediaQuery,
   Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  CircularProgress,
-  Skeleton,
+  MenuItem
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {
@@ -50,6 +40,7 @@ import {
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
+import {  Wand } from 'lucide-react';
 
 const drawerWidth = 260;
 
@@ -139,6 +130,9 @@ export default function Sidebar({ children, user }) {
   const [userName, setUserName] = React.useState('');
   const [userEmail, setUserEmail] = React.useState('');
   const [initialLoad, setInitialLoad] = React.useState(true);
+  const [locationCheck,setLocationCheck] = React.useState("")
+  const [openDropdown, setOpenDropdown] = React.useState(null);
+
 
   const [notifications, setNotifications] = React.useState([]);
   const [notificationCount, setNotificationCount] = React.useState(0);
@@ -231,6 +225,9 @@ export default function Sidebar({ children, user }) {
     }
   };
 
+  console.log("aaasasas",locationCheck);
+  
+
   // Fetch wallet balance from API
   const fetchWalletBalance = async () => {
     try {
@@ -320,21 +317,21 @@ export default function Sidebar({ children, user }) {
     setAnchorEl(null);
   };
 
-  const handleUpgradeClick = () => {
-    if (userPlan === 'Free' || subscriptionData?.subscription?.status !== 'active') {
-      handleMenuClose();
-      router.push('/subscription');
-    } else {
-      // Refresh subscription data before opening dialog
-      fetchSubscriptionDetails(true);
-      setUpgradeDialogOpen(true);
-      handleMenuClose();
-    }
-  };
+  // const handleUpgradeClick = () => {
+  //   if (userPlan === 'Free' || subscriptionData?.subscription?.status !== 'active') {
+  //     handleMenuClose();
+  //     router.push('/subscription');
+  //   } else {
+  //     // Refresh subscription data before opening dialog
+  //     fetchSubscriptionDetails(true);
+  //     setUpgradeDialogOpen(true);
+  //     handleMenuClose();
+  //   }
+  // };
 
-  const handleUpgradeDialogClose = () => {
-    setUpgradeDialogOpen(false);
-  };
+  // const handleUpgradeDialogClose = () => {
+  //   setUpgradeDialogOpen(false);
+  // };
 
   const handleWalletClick = () => {
     if (userId) {
@@ -376,56 +373,75 @@ const fetchNotifications = async () => {
 
   React.useEffect(() => {
     fetchNotifications();
-  }, []);
+    const locationDetailsStr = localStorage.getItem("locationDetails");
+      console.log("locationDetailsStr",locationDetailsStr);
 
+      const locationDetails = JSON.parse(locationDetailsStr);
+
+            console.log("locationDetails-------",locationDetails);
+            
+            
+            const bussinessLocation = locationDetails &&  locationDetails[0]?.title;
+            setLocationCheck(bussinessLocation)
+          }, []);
+          
+          console.log("locationCheck",locationCheck);
   // ✅ Handle open/close
   const handleNotifOpen = (event) => setNotifAnchorEl(event.currentTarget);
   const handleNotifClose = () => setNotifAnchorEl(null);
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'POST Managements', icon: <AccountIcon />, path: '/post-management' },
-    { text: 'Review Mangements', icon: <PostIcon />, path: '/review-management' },
-    { text: 'Manage your Plan', icon: <UpgradeIcon />, path: '/subscription' },
-  ];
+ const menuItems = [
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { text: 'POST Managements', icon: <AccountIcon />, path: '/post-management' },
+  { text: 'Review Mangements', icon: <PostIcon />, path: '/review-management' },
 
-  const getPlanConfig = (plan) => {
-    const planLower = plan?.toLowerCase() || 'free';
+  {
+    text: 'Get Magic QR',
+    icon: <Wand />,
+    children: [
+      { text: 'Get Magic QR', path: '/get-magic-qr' },
+      { text: 'Get Customer Review', path: '/reviews/get-customer-review' }
+    ]
+  },
+];
 
-    switch (planLower) {
-      case 'premium':
-      case 'premium plan':
-      case 'pro':
-        return {
-          label: 'Premium',
-          gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-          color: 'white',
-        };
-      case 'enterprise':
-      case 'enterprise plan':
-        return {
-          label: 'Enterprise',
-          gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-          color: 'white',
-        };
-      case 'standard':
-      case 'standard plan':
-        return {
-          label: 'Standard',
-          gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          color: 'white',
-        };
-      case 'free':
-      default:
-        return {
-          label: 'Free',
-          gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-          color: 'white',
-        };
-    }
-  };
+  // const getPlanConfig = (plan) => {
+  //   const planLower = plan?.toLowerCase() || 'free';
 
-  const planConfig = getPlanConfig(userPlan);
+  //   switch (planLower) {
+  //     case 'premium':
+  //     case 'premium plan':
+  //     case 'pro':
+  //       return {
+  //         label: 'Premium',
+  //         gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+  //         color: 'white',
+  //       };
+  //     case 'enterprise':
+  //     case 'enterprise plan':
+  //       return {
+  //         label: 'Enterprise',
+  //         gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+  //         color: 'white',
+  //       };
+  //     case 'standard':
+  //     case 'standard plan':
+  //       return {
+  //         label: 'Standard',
+  //         gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+  //         color: 'white',
+  //       };
+  //     case 'free':
+  //     default:
+  //       return {
+  //         label: 'Free',
+  //         gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+  //         color: 'white',
+  //       };
+  //   }
+  // };
+
+  // const planConfig = getPlanConfig(userPlan);
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -472,55 +488,113 @@ const fetchNotifications = async () => {
       <Divider sx={{ borderColor: 'rgba(102, 126, 234, 0.1)' }} />
 
       <List sx={{ flex: 1, overflowY: 'auto', px: 1.5, pt: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ display: 'block', mb: 0.5 }}>
+{menuItems.map((item, index) => {
+  const isDropdown = !!item.children;
+  const isOpen = openDropdown === index;
+
+  const navigateTo = (path) => {
+    let finalPath = path;
+
+    if (path.includes("[bussiness]")) {
+      const slug = locationCheck && locationCheck.trim().replace(/\s+/g, "-").toLowerCase();
+      finalPath = path.replace("[bussiness]", slug);
+    }
+
+    if (isMobile) handleDrawerToggle();
+    router.push(finalPath);
+  };
+
+  return (
+    <div key={index}>
+      {/* MAIN BUTTON */}
+      <ListItem disablePadding sx={{ display: 'block', mb: 0.5 }}>
+        <ListItemButton
+          onClick={() => {
+            if (isDropdown) {
+              setOpenDropdown(isOpen ? null : index);
+            } else {
+              navigateTo(item.path);
+            }
+          }}
+          sx={{
+            minHeight: 48,
+            justifyContent: open ? 'initial' : 'center',
+            px: 2,
+            borderRadius: 2,
+            transition: 'all 0.3s',
+            '&:hover': {
+              background:
+                'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+              transform: 'translateX(4px)',
+            },
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 0,
+              mr: open ? 2 : 'auto',
+              justifyContent: 'center',
+              color: '#667eea',
+            }}
+          >
+            {item.icon}
+          </ListItemIcon>
+
+          <ListItemText
+            primary={item.text}
+            sx={{
+              opacity: open ? 1 : 0,
+              '& .MuiTypography-root': { fontWeight: 500, fontSize: '0.95rem' },
+            }}
+          />
+
+          {isDropdown && open && (
+            <span>{isOpen ? "▲" : "▼"}</span>
+          )}
+        </ListItemButton>
+      </ListItem>
+
+      {/* DROPDOWN CHILDREN */}
+      {isDropdown && isOpen && open && (
+        <div className="ml-10 mt-1 space-y-1">
+          {item.children.map((sub, i) => (
             <ListItemButton
-              onClick={() => {
-                if (isMobile) handleDrawerToggle();
-                if (item.path) router.push(item.path);
-              }}
+              key={i}
+              onClick={() => navigateTo(sub.path)}
               sx={{
-                minHeight: 48,
-                justifyContent: open ? 'initial' : 'center',
-                px: 2,
+                pl: 2,
+                py: 1,
                 borderRadius: 2,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
-                  transform: 'translateX(4px)',
-                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.15)',
-                },
+                transition: '0.2s',
+                '&:hover': { background: 'rgba(102,126,234,0.1)' },
               }}
             >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: open ? 2 : 'auto',
-                  justifyContent: 'center',
-                  color: '#667eea',
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                sx={{
-                  opacity: open ? 1 : 0,
-                  '& .MuiTypography-root': {
-                    fontWeight: 500,
-                    fontSize: '0.95rem',
-                  },
-                }}
+              <ListItemText 
+                primary={sub.text} 
+                sx={{ '& .MuiTypography-root': { fontSize: '0.85rem' } }} 
               />
             </ListItemButton>
-          </ListItem>
-        ))}
+          ))}
+        </div>
+      )}
+    </div>
+  );
+})}
+
+
       </List>
     </Box>
-  );
+  );  
 
-  console.log("subscriptionData",subscriptionData);
-  
+
+  // Open dropdown by default (for the first dropdown menu)
+React.useEffect(() => {
+  const firstDropdownIndex = menuItems.findIndex(item => item.children);
+  if (firstDropdownIndex !== -1) {
+    setOpenDropdown(firstDropdownIndex);
+  }
+}, []);
+
 
   
   return (
@@ -664,39 +738,7 @@ const fetchNotifications = async () => {
                 }}
               />
 
-              {/* Plan Chip */}
-              {initialLoad ? (
-                <Skeleton 
-                  variant="rectangular" 
-                  width={isMobile ? 60 : 100} 
-                  height={isMobile ? 28 : 32}
-                  sx={{ borderRadius: 4 }}
-                />
-              ) : (
-                <Chip
-                  label={userPlan ? userPlan: "Free"}
-                  icon={<UpgradeIcon sx={{ color: 'white !important' }} />}
-                  onClick={handleUpgradeClick}
-                  sx={{
-                    fontWeight: 600,
-                    background: planConfig.gradient,
-                    color: planConfig.color,
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(80, 44, 223, 0.2)',
-                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                    height: { xs: 28, sm: 32 },
-                    '&:hover': {
-                      opacity: 0.9,
-                      transform: 'scale(1.05)',
-                      transition: 'all 0.2s',
-                    },
-                    '& .MuiChip-icon': {
-                      fontSize: { xs: '1rem', sm: '1.25rem' },
-                    },
-                  }}
-                />
-              )}
+              
 
               {/* User Menu */}
               <Box
@@ -816,7 +858,7 @@ const fetchNotifications = async () => {
             </ListItemIcon>
             <ListItemText>Wallet ({walletBalance} Coins)</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleUpgradeClick}>
+          {/* <MenuItem onClick={handleUpgradeClick}>
             <ListItemIcon>
               <UpgradeIcon fontSize="small" />
             </ListItemIcon>
@@ -825,7 +867,7 @@ const fetchNotifications = async () => {
                 ? 'Upgrade Plan'
                 : 'Manage Subscription'}
             </ListItemText>
-          </MenuItem>
+          </MenuItem> */}
           <MenuItem
             onClick={() => {
               handleMenuClose();
@@ -853,7 +895,7 @@ const fetchNotifications = async () => {
         </Menu>
 
         {/* Subscription Details Dialog */}
-        <Dialog
+        {/* <Dialog
           open={upgradeDialogOpen}
           onClose={handleUpgradeDialogClose}
           maxWidth="md"
@@ -1054,7 +1096,7 @@ const fetchNotifications = async () => {
               </Button>
             )}
           </DialogActions>
-        </Dialog>
+        </Dialog> */}
 
         {/* Drawer */}
         {isMobile ? (

@@ -29,6 +29,7 @@ export default function ConnectedBusinessPage() {
     fetchUsers();
   }, []);
 
+
   const truncateToken = (token) => {
     if (!token) return "-";
     return token.length > 15

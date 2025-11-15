@@ -21,12 +21,11 @@ import {
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 
-
 // Toast Component
 const Toast = ({ message, type = "success" }) => (
-  <div className={`fixed top-18 right-4 px-6 py-4 rounded-xl shadow-2xl z-50 animate-slide-in ${
+  <div className={`fixed top-4 sm:top-18 right-4 left-4 sm:left-auto sm:right-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-2xl z-50 animate-slide-in ${
     type === "success" ? "bg-gradient-to-r from-green-500 to-emerald-600" : "bg-gradient-to-r from-red-500 to-rose-600"
-  } text-white font-semibold`}>
+  } text-white font-semibold text-sm sm:text-base text-center sm:text-left`}>
     {message}
   </div>
 );
@@ -34,56 +33,25 @@ const Toast = ({ message, type = "success" }) => (
 // Insufficient Balance Modal
 const InsufficientBalanceModal = ({ onClose, onRecharge, walletBalance }) => (
   <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border-4 border-red-200 animate-scale-in">
-      <div className="text-center space-y-6">
-        <div className="text-7xl">💸</div>
-        <h3 className="text-3xl font-black text-gray-900">Insufficient Balance!</h3>
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4">
-          <p className="text-red-800 font-semibold">Current Balance: {walletBalance} coins</p>
-          <p className="text-red-600 text-sm mt-1">Required: 350 Coins per AI post</p>
+    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 border-4 border-red-200 animate-scale-in">
+      <div className="text-center space-y-4 sm:space-y-6">
+        <div className="text-5xl sm:text-7xl">💸</div>
+        <h3 className="text-2xl sm:text-3xl font-black text-gray-900">Insufficient Balance!</h3>
+        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3 sm:p-4">
+          <p className="text-red-800 font-semibold text-sm sm:text-base">Current Balance: {walletBalance} coins</p>
+          <p className="text-red-600 text-xs sm:text-sm mt-1">Required: 150 Coins per AI post</p>
         </div>
-        <p className="text-gray-600">Please recharge your wallet to continue generating AI posts</p>
-        <div className="flex gap-3">
+        <p className="text-gray-600 text-sm sm:text-base">Please recharge your wallet to continue generating AI posts</p>
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={onRecharge}
-            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all text-sm sm:text-base"
           >
             Recharge Wallet
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// Upgrade Plan Modal
-const UpgradePlanModal = ({ onClose, onUpgrade }) => (
-  <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border-4 border-amber-200 animate-scale-in">
-      <div className="text-center space-y-6">
-        <div className="text-7xl">🔒</div>
-        <h3 className="text-3xl font-black text-gray-900">Upgrade Required!</h3>
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
-          <p className="text-amber-800 font-semibold">Free Plan Active</p>
-          <p className="text-amber-600 text-sm mt-1">Upgrade to generate AI posts</p>
-        </div>
-        <p className="text-gray-600">Unlock unlimited AI-powered post generation with our premium plans</p>
-        <div className="flex gap-3">
-          <button
-            onClick={onUpgrade}
-            className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-          >
-            View Plans
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all"
+            className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-300 transition-all text-sm sm:text-base"
           >
             Cancel
           </button>
@@ -96,18 +64,18 @@ const UpgradePlanModal = ({ onClose, onUpgrade }) => (
 // Loading Overlay Component with Timer
 const LoadingOverlay = ({ countdown }) => (
   <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-    <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-10 flex flex-col items-center space-y-6 max-w-md w-full border-4 border-white/30">
+    <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 flex flex-col items-center space-y-4 sm:space-y-6 max-w-md w-full border-4 border-white/30">
       <div className="relative">
         <div className="absolute inset-0 bg-yellow-300/40 rounded-full blur-2xl animate-pulse"></div>
-        <Loader2 className="w-20 h-20 text-white animate-spin relative z-10" />
-        <Sparkles className="w-8 h-8 text-yellow-300 absolute -top-3 -right-3 animate-bounce" />
+        <Loader2 className="w-16 h-16 sm:w-20 sm:h-20 text-white animate-spin relative z-10" />
+        <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-300 absolute -top-2 -right-2 sm:-top-3 sm:-right-3 animate-bounce" />
       </div>
-      <div className="text-center space-y-3">
-        <h3 className="text-3xl font-black text-white">Creating Magic ✨</h3>
-        <p className="text-blue-100 text-sm">AI is generating your stunning post...</p>
+      <div className="text-center space-y-2 sm:space-y-3">
+        <h3 className="text-2xl sm:text-3xl font-black text-white">Creating Magic ✨</h3>
+        <p className="text-blue-100 text-xs sm:text-sm">AI is generating your stunning post...</p>
         {countdown > 0 && (
-          <div className="mt-4">
-            <div className="text-6xl font-black text-white animate-pulse">{countdown}</div>
+          <div className="mt-3 sm:mt-4">
+            <div className="text-5xl sm:text-6xl font-black text-white animate-pulse">{countdown}</div>
             <p className="text-blue-100 text-xs mt-2">seconds remaining</p>
           </div>
         )}
@@ -140,39 +108,39 @@ const SuccessOverlay = ({ onComplete }) => {
           <div className="confetti"></div>
         </div>
 
-        <div className="relative bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 rounded-3xl shadow-2xl p-12 flex flex-col items-center space-y-6 max-w-lg w-full border-4 border-white animate-scale-in">
+        <div className="relative bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 rounded-2xl sm:rounded-3xl shadow-2xl p-8 sm:p-12 flex flex-col items-center space-y-4 sm:space-y-6 max-w-lg w-full border-4 border-white animate-scale-in">
           <div className="relative">
             <div className="absolute inset-0 bg-yellow-300/50 rounded-full blur-3xl animate-pulse-slow"></div>
-            <div className="text-9xl animate-rocket relative z-10">🚀</div>
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+            <div className="text-7xl sm:text-9xl animate-rocket relative z-10">🚀</div>
+            <div className="absolute -bottom-3 sm:-bottom-4 left-1/2 transform -translate-x-1/2">
               <div className="flex gap-1">
-                <div className="w-2 h-8 bg-orange-400 rounded-full animate-flame-1"></div>
-                <div className="w-2 h-10 bg-yellow-400 rounded-full animate-flame-2"></div>
-                <div className="w-2 h-8 bg-orange-400 rounded-full animate-flame-3"></div>
+                <div className="w-1.5 sm:w-2 h-6 sm:h-8 bg-orange-400 rounded-full animate-flame-1"></div>
+                <div className="w-1.5 sm:w-2 h-8 sm:h-10 bg-yellow-400 rounded-full animate-flame-2"></div>
+                <div className="w-1.5 sm:w-2 h-6 sm:h-8 bg-orange-400 rounded-full animate-flame-3"></div>
               </div>
             </div>
           </div>
 
-          <div className="text-center space-y-4 relative z-10">
+          <div className="text-center space-y-3 sm:space-y-4 relative z-10">
             <div className="flex items-center justify-center gap-3">
-              <CheckCircle className="w-16 h-16 text-white animate-check" />
+              <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-white animate-check" />
             </div>
-            <h3 className="text-4xl font-black text-white animate-bounce-in">
+            <h3 className="text-3xl sm:text-4xl font-black text-white animate-bounce-in">
               Post Published!
             </h3>
-            <p className="text-white/90 text-lg font-semibold">
+            <p className="text-white/90 text-base sm:text-lg font-semibold px-4">
               Your post is now live on Google My Business! 🎉
             </p>
           </div>
 
-          <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden relative">
+          <div className="w-full bg-white/30 rounded-full h-2.5 sm:h-3 overflow-hidden relative">
             <div className="bg-white h-full rounded-full animate-progress-bar shadow-lg"></div>
           </div>
 
           <div className="flex gap-2 animate-stars">
-            <Sparkles className="w-8 h-8 text-yellow-300" />
-            <Sparkles className="w-10 h-10 text-yellow-200" />
-            <Sparkles className="w-8 h-8 text-yellow-300" />
+            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-300" />
+            <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-200" />
+            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-300" />
           </div>
         </div>
       </div>
@@ -185,34 +153,34 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
   const removeImage = () => setLogo(null);
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-200 p-6 md:p-8">
-      <div className="flex flex-col space-y-6">
-        <div className="space-y-3">
-          <label className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-amber-500" />
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border-2 border-blue-200 p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />
             What would you like to create?
           </label>
           <textarea
             placeholder="Describe your post idea... e.g., 'Create a festive Diwali offer post for RO water purifier with 30% discount'"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="w-full p-4 border-2 border-gray-300 rounded-xl text-gray-800 focus:ring-4 focus:ring-blue-300 focus:border-blue-500 outline-none transition-all min-h-[120px] resize-none placeholder:text-gray-400 bg-gray-50"
+            className="w-full p-3 sm:p-4 border-2 border-gray-300 rounded-xl text-sm sm:text-base text-gray-800 focus:ring-4 focus:ring-blue-300 focus:border-blue-500 outline-none transition-all min-h-[100px] sm:min-h-[120px] resize-none placeholder:text-gray-400 bg-gray-50"
             disabled={loading}
           />
         </div>
 
-        <div className="space-y-3">
-          <label className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Upload className="w-6 h-6 text-blue-500" />
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+            <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             Add Your Logo (Optional)
           </label>
 
           {!logo ? (
-            <label className="flex flex-col items-center justify-center w-full h-36 border-3 border-dashed border-blue-400 rounded-xl cursor-pointer bg-blue-50 hover:bg-blue-100 hover:border-blue-500 transition-all group">
+            <label className="flex flex-col items-center justify-center w-full h-32 sm:h-36 border-3 border-dashed border-blue-400 rounded-xl cursor-pointer bg-blue-50 hover:bg-blue-100 hover:border-blue-500 transition-all group">
               <div className="flex flex-col items-center justify-center">
-                <ImageIcon className="w-12 h-12 text-blue-500 mb-3 group-hover:scale-110 transition-transform" />
-                <p className="text-base text-gray-700 font-semibold">Click to upload logo</p>
-                <p className="text-sm text-gray-500 mt-1">PNG, JPG up to 10MB</p>
+                <ImageIcon className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500 mb-2 sm:mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-sm sm:text-base text-gray-700 font-semibold">Click to upload logo</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">PNG, JPG up to 10MB</p>
               </div>
               <input
                 type="file"
@@ -223,7 +191,7 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
               />
             </label>
           ) : (
-            <div className="relative w-full h-36 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-blue-300 p-4 shadow-md">
+            <div className="relative w-full h-32 sm:h-36 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-blue-300 p-3 sm:p-4 shadow-md">
               <img
                 src={URL.createObjectURL(logo)}
                 alt="Logo Preview"
@@ -231,9 +199,9 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
               />
               <button
                 onClick={removeImage}
-                className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-all shadow-xl hover:scale-110"
+                className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 bg-red-500 text-white rounded-full p-1.5 sm:p-2 hover:bg-red-600 transition-all shadow-xl hover:scale-110"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           )}
@@ -242,15 +210,15 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
         <button
           onClick={onGenerate}
           disabled={loading || !prompt.trim()}
-          className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white px-8 py-5 rounded-xl hover:shadow-2xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-black text-lg"
+          className="w-full inline-flex items-center justify-center gap-2 sm:gap-3 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white px-6 sm:px-8 py-4 sm:py-5 rounded-xl hover:shadow-2xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-black text-base sm:text-lg"
         >
-          <Sparkles className="w-6 h-6" />
+          <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
           Generate Post with AI
         </button>
 
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4">
-          <p className="text-sm text-amber-900 flex items-start gap-2">
-            <span className="text-xl">💡</span>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-amber-900 flex items-start gap-2">
+            <span className="text-lg sm:text-xl">💡</span>
             <span><strong>Pro Tip:</strong> Be specific about your business, offer details, colors, and style for best results!</span>
           </p>
         </div>
@@ -263,17 +231,17 @@ const PostInput = ({ prompt, setPrompt, logo, setLogo, onGenerate, loading }) =>
 const TabButton = ({ tab, isActive, onClick, count }) => (
   <button
     onClick={onClick}
-    className={`flex items-center justify-center gap-2 px-4 py-4 rounded-xl border-3 text-sm md:text-base font-bold transition-all flex-1 shadow-md hover:shadow-xl ${
+    className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl border-2 sm:border-3 text-xs sm:text-sm md:text-base font-bold transition-all flex-1 shadow-md hover:shadow-xl ${
       isActive
         ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent scale-105"
         : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50"
     }`}
   >
-    <tab.icon className="w-5 h-5 flex-shrink-0" />
+    <tab.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
     <span className="truncate hidden sm:inline">{tab.label}</span>
     <span className="truncate sm:hidden">{tab.shortLabel || tab.label}</span>
     <span
-      className={`px-3 py-1 rounded-full text-xs font-black ${
+      className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-black ${
         isActive ? "bg-white/30 text-white" : "bg-blue-100 text-blue-700"
       }`}
     >
@@ -299,209 +267,187 @@ const PostCard = ({ post, scheduleDates, onDateChange, onUpdateStatus, onReject,
   };
 
   return (
-   <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all">
-  <a href={post.aiOutput} target="_blank" rel="noopener noreferrer">
-    <div className="relative group">
-      {/* 🖼️ Post Image */}
-      <img
-        src={post?.aiOutput || "https://via.placeholder.com/400"}
-        alt="Post"
-        className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity"
-      />
-
-      {/* 🔖 Status Badge */}
-      <div
-        className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
-          post.status === "pending"
-            ? "bg-yellow-500/90 text-white"
-            : post.status === "approved"
-            ? "bg-green-500/90 text-white"
-            : post.status === "posted"
-            ? "bg-purple-600/90 text-white"
-            : "bg-blue-500/90 text-white"
-        }`}
-      >
-        {post.status.toUpperCase()}
-      </div>
-
-      {/* ⬇️ Download & Share Icons */}
-     <div className="absolute bottom-4 right-4 flex gap-3 transition-opacity">
-  <button
-    onClick={(e) => {
-      e.preventDefault();
-      handleDownload(post);
-    }}
-    className="p-2 bg-white/80 hover:bg-white rounded-full shadow-md backdrop-blur-sm transition"
-    title="Download"
-  >
-    <Download className="w-4 h-4 text-blue-600" />
-  </button>
-
-  <button
-    onClick={(e) => {
-      e.preventDefault();
-      handleShare(post);
-    }}
-    className="p-2 bg-white/80 hover:bg-white rounded-full shadow-md backdrop-blur-sm transition"
-    title="Share"
-  >
-    <Share2 className="w-4 h-4 text-blue-600" />
-  </button>
-</div>
-
-    </div>
-  </a>
-
-  {/* 📝 Description + Actions */}
-  <div className="p-6 space-y-5">
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <strong className="text-gray-900 font-bold flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-blue-600" />
-          Description
-        </strong>
-        {!isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition"
-          >
-            <Edit3 className="w-3 h-3" />
-            Edit
-          </button>
-        )}
-      </div>
-
-      {isEditing ? (
-        <div className="space-y-3">
-          <textarea
-            value={editedDescription}
-            onChange={(e) => setEditedDescription(e.target.value)}
-            className="w-full p-3 border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none text-gray-800 text-sm min-h-[120px]"
-            rows={5}
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl border-2 border-gray-200 overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all">
+      <a href={post.aiOutput} target="_blank" rel="noopener noreferrer">
+        <div className="relative group">
+          <img
+            src={post?.aiOutput || "https://via.placeholder.com/400"}
+            alt="Post"
+            className="w-full h-48 sm:h-64 object-cover group-hover:opacity-90 transition-opacity"
           />
-          <div className="flex gap-2">
+
+          <div
+            className={`absolute top-3 sm:top-4 right-3 sm:right-4 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-black shadow-xl backdrop-blur-sm ${
+              post.status === "pending"
+                ? "bg-yellow-500/90 text-white"
+                : post.status === "approved"
+                ? "bg-green-500/90 text-white"
+                : post.status === "posted"
+                ? "bg-purple-600/90 text-white"
+                : "bg-blue-500/90 text-white"
+            }`}
+          >
+            {post.status.toUpperCase()}
+          </div>
+
+          <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 flex gap-2 sm:gap-3 transition-opacity">
             <button
-              onClick={handleSave}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-bold hover:shadow-lg transition"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDownload(post);
+              }}
+              className="p-1.5 sm:p-2 bg-white/80 hover:bg-white rounded-full shadow-md backdrop-blur-sm transition"
+              title="Download"
             >
-              <Save className="w-4 h-4" />
-              Save
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
             </button>
+
             <button
-              onClick={handleCancel}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition"
+              onClick={(e) => {
+                e.preventDefault();
+                handleShare(post);
+              }}
+              className="p-1.5 sm:p-2 bg-white/80 hover:bg-white rounded-full shadow-md backdrop-blur-sm transition"
+              title="Share"
             >
-              <X className="w-4 h-4" />
-              Cancel
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
             </button>
           </div>
         </div>
-      ) : (
-        <>
-          <p className={`text-sm text-gray-700 leading-relaxed ${showFull ? "" : "line-clamp-3"}`}>
-            {post?.description || "No description available"}
-          </p>
-          {post?.description?.length > 150 && (
-            <button
-              onClick={() => setShowFull(!showFull)}
-              className="flex items-center gap-1 text-blue-600 text-sm font-semibold mt-2 hover:text-blue-700"
-            >
-              {showFull ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              {showFull ? "Show Less" : "Show More"}
-            </button>
+      </a>
+
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <div>
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <strong className="text-gray-900 text-sm sm:text-base font-bold flex items-center gap-2">
+              <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+              Description
+            </strong>
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-200 transition"
+              >
+                <Edit3 className="w-3 h-3" />
+                Edit
+              </button>
+            )}
+          </div>
+
+          {isEditing ? (
+            <div className="space-y-2 sm:space-y-3">
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                className="w-full p-2.5 sm:p-3 border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 outline-none text-gray-800 text-xs sm:text-sm min-h-[100px] sm:min-h-[120px]"
+                rows={5}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSave}
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-xs sm:text-sm font-bold hover:shadow-lg transition"
+                >
+                  <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  Save
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm font-bold hover:bg-gray-300 transition"
+                >
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className={`text-xs sm:text-sm text-gray-700 leading-relaxed ${showFull ? "" : "line-clamp-3"}`}>
+                {post?.description || "No description available"}
+              </p>
+              {post?.description?.length > 150 && (
+                <button
+                  onClick={() => setShowFull(!showFull)}
+                  className="flex items-center gap-1 text-blue-600 text-xs sm:text-sm font-semibold mt-2 hover:text-blue-700"
+                >
+                  {showFull ? <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  {showFull ? "Show Less" : "Show More"}
+                </button>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+
+        <p className="text-xs text-gray-500 flex items-center gap-1 pt-2 border-t border-gray-100">
+          <Calendar className="w-3 h-3" />
+          Created: {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "N/A"}
+        </p>
+
+        <div className="pt-2 sm:pt-3 space-y-2 sm:space-y-3">
+          {post.status === "pending" && (
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <button
+                onClick={() => onUpdateStatus(post._id, "approved")}
+                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:shadow-xl transition-all"
+              >
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                Approve
+              </button>
+              <button
+                onClick={() => onReject(post._id)}
+                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-500 to-rose-600 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:shadow-xl transition-all"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                Reject
+              </button>
+            </div>
+          )}
+
+          {post.status === "approved" && (
+            <div className="space-y-2 sm:space-y-3">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
+                <button
+                  onClick={() => handlePost(post)}
+                  className="w-full flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 sm:px-4 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-xs sm:text-base font-black hover:shadow-xl transition-all cursor-pointer"
+                >
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Post Now
+                </button>
+              </div>
+            </div>
+          )}
+
+          {post.status === "scheduled" && (
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg sm:rounded-xl p-4 sm:p-5 space-y-3 sm:space-y-4">
+              <div className="bg-white rounded-lg p-2.5 sm:p-3 border border-blue-200">
+                <p className="text-xs sm:text-sm text-gray-700 font-semibold flex items-center gap-2 mb-1">
+                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+                  Scheduled for:
+                </p>
+                <p className="text-blue-700 font-black text-base sm:text-lg">
+                  {post.scheduledDate
+                    ? new Date(post.scheduledDate).toLocaleString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Not set"}
+                </p>
+              </div>
+
+              <button
+                onClick={() => handlePost(post)}
+                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 sm:px-4 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-xs sm:text-base font-black hover:shadow-xl transition-all"
+              >
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                Post Now
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-
-    <p className="text-xs text-gray-500 flex items-center gap-1 pt-2 border-t border-gray-100">
-      <Calendar className="w-3 h-3" />
-      Created: {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "N/A"}
-    </p>
-
-    <div className="pt-3 space-y-3">
-      {post.status === "pending" && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => onUpdateStatus(post._id, "approved")}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-          >
-            <CheckCircle className="w-5 h-5" />
-            Approve
-          </button>
-          <button
-            onClick={() => onReject(post._id)}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-rose-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-          >
-            <X className="w-5 h-5" />
-            Reject
-          </button>
-        </div>
-      )}
-
-      {post.status === "approved" && (
-        <div className="space-y-3">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
-            {/* <label className="text-sm font-bold text-gray-700">Schedule Post</label>
-            <input
-              type="datetime-local"
-              value={scheduleDates[post._id] || ""}
-              onChange={(e) => onDateChange(post._id, e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-              className="w-full border-2 border-green-400 rounded-lg px-4 py-3 text-sm text-gray-700 focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all"
-            />
-            <p className="text-xs text-gray-600">📅 Select current or future date & time</p> */}
-            {/* <button
-              onClick={() => onUpdateStatus(post._id, "scheduled")}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
-            >
-              <Calendar className="w-5 h-5" />
-              Schedule Post
-            </button> */}
-            <button
-              onClick={() => handlePost(post)}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base cursor-pointer"
-            >
-              <Send className="w-5 h-5" />
-              Post Now
-            </button>
-          </div>
-        </div>
-      )}
-
-      {post.status === "scheduled" && (
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-5 space-y-4">
-          <div className="bg-white rounded-lg p-3 border border-blue-200">
-            <p className="text-sm text-gray-700 font-semibold flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 text-blue-600" />
-              Scheduled for:
-            </p>
-            <p className="text-blue-700 font-black text-lg">
-              {post.scheduledDate
-                ? new Date(post.scheduledDate).toLocaleString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "Not set"}
-            </p>
-          </div>
-
-          <button
-            onClick={() => handlePost(post)}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3.5 rounded-xl font-black hover:shadow-xl transition-all text-base"
-          >
-            <Send className="w-5 h-5" />
-            Post Now
-          </button>
-        </div>
-      )}
-    </div>
-  </div>
-</div>
-
   );
 };
 
@@ -511,11 +457,9 @@ export default function PostManagement() {
   const [aiResponse, setAiResponse] = useState(null);
   const [countdown, setCountdown] = useState(0);
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
-  const [showUpgradePlan, setShowUpgradePlan] = useState(false);
   const [userWallet, setUserWallet] = useState(0);
-    const { slug } = useParams();
-      const { data: session } = useSession()
-    
+  const { slug } = useParams();
+  const { data: session } = useSession();
 
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("total");
@@ -525,7 +469,6 @@ export default function PostManagement() {
   const [toast, setToast] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -598,152 +541,135 @@ export default function PostManagement() {
     }
 
     try {
-  // ✅ Check User Subscription & Wallet
-  const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
-  if (!userRes.ok) {
-    showToast("Failed to fetch user data", "error");
-    return;
-  }
-
-  const userData = await userRes.json();
-  const subscription = userData.subscription || {};
-  const walletBalance = userData.wallet || 0;
-
-  setUserWallet(walletBalance);
-
-  // ✅ FIXED LOGIC:
-  // Allow Free plan users if they have 350 or more coins.
-  // Otherwise, show upgrade modal.
-  if (subscription.plan === "Free" && walletBalance < 350) {
-    setShowUpgradePlan(true);
-    return;
-  }
-
-  // ✅ If paid plan but inactive AND wallet also low → ask to upgrade
-  if (subscription.plan !== "Free" && subscription.status !== "active" && walletBalance < 350) {
-    setShowUpgradePlan(true);
-    return;
-  }
-
-  // ✅ Final check — insufficient balance for anyone
-  if (walletBalance < 350) {
-    setShowInsufficientBalance(true);
-    return;
-  }
-
-  // Continue normal flow
-  setIsGenerating(true);
-  setAiResponse(null);
-  setCountdown(59);
-
-  // Start countdown timer
-  const timer = setInterval(() => {
-    setCountdown((prev) => {
-      if (prev <= 1) {
-        clearInterval(timer);
-        return 0;
+      // ✅ Check User Wallet Balance
+      const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+      if (!userRes.ok) {
+        showToast("Failed to fetch user data", "error");
+        return;
       }
-      return prev - 1;
-    });
-  }, 1000);
 
-  // Convert logo file to base64 (if provided)
-  let logoBase64 = null;
-  if (logo) {
-    logoBase64 = await fileToBase64(logo);
-  }
+      const userData = await userRes.json();
+      const walletBalance = userData.wallet || 0;
 
-  // Call AI Agent API
-  const res = await fetch("/api/aiAgent", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt,
-      logo: logoBase64,
-    }),
-  });
+      setUserWallet(walletBalance);
 
-  clearInterval(timer);
+      // ✅ Check if user has sufficient balance (150 coins required)
+      if (walletBalance < 150) {
+        setShowInsufficientBalance(true);
+        return;
+      }
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to generate post from AI agent.");
-  }
+      // Continue normal flow
+      setIsGenerating(true);
+      setAiResponse(null);
+      setCountdown(59);
 
-  const apiResponse = await res.json();
-  if (!apiResponse.success) {
-    throw new Error(apiResponse.error || "AI agent failed with no specific error.");
-  }
+      // Start countdown timer
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-  const data = apiResponse.data || {};
-  const aiOutput = data.output;
-  const logoUrl = data.logoUrl;
-  const description = data.description;
+      // Convert logo file to base64 (if provided)
+      let logoBase64 = null;
+      if (logo) {
+        logoBase64 = await fileToBase64(logo);
+      }
 
-  setAiResponse(data);
+      // Call AI Agent API
+      const res = await fetch("/api/aiAgent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          logo: logoBase64,
+        }),
+      });
 
-  // Save post in MongoDB
-  const postRes = await fetch("/api/post-status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      userId,
-      aiOutput,
-      description,
-      logoUrl,
-      status: "pending",
-    }),
-  });
+      clearInterval(timer);
 
-  const postData = await postRes.json();
-  if (!postData.success) {
-    throw new Error(postData.error || "Failed to save post in database.");
-  }
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to generate post from AI agent.");
+      }
 
-  // Deduct 350 coins from wallet
-  const walletRes = await fetch("/api/auth/signup", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      userId,
-      amount: 350,
-      type: "deduct",
-    }),
-  });
+      const apiResponse = await res.json();
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || "AI agent failed with no specific error.");
+      }
 
-  const walletData = await walletRes.json();
+      const data = apiResponse.data || {};
+      const aiOutput = data.output;
+      const logoUrl = data.logoUrl;
+      const description = data.description;
 
-  if (walletData.error) {
-    console.warn("Wallet deduction failed:", walletData.error);
-    showToast(walletData.error, "error");
-  } else {
-    showToast("350 coins deducted for AI post ✅", "success");
-    setUserWallet((prev) => Math.max(0, prev - 350));
-  }
+      setAiResponse(data);
 
-  // Update frontend state
-  setPosts((prev) => [postData.data, ...prev]);
-  setAllCounts((prev) => ({
-    ...prev,
-    total: prev.total + 1,
-    pending: prev.pending + 1,
-  }));
+      // Save post in MongoDB
+      const postRes = await fetch("/api/post-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          aiOutput,
+          description,
+          logoUrl,
+          status: "pending",
+        }),
+      });
 
-  showToast("AI Post Generated & Saved Successfully! 🎉");
+      const postData = await postRes.json();
+      if (!postData.success) {
+        throw new Error(postData.error || "Failed to save post in database.");
+      }
 
-  setPrompt("");
-  setLogo(null);
-  setCountdown(0);
-} catch (error) {
-  console.error("Generation Error:", error);
-  showToast(error.message || "Failed to generate AI post!", "error");
-} finally {
-  setIsGenerating(false);
-  setCountdown(0);
-}
+      // Deduct 150 coins from wallet
+      const walletRes = await fetch("/api/auth/signup", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          amount: 150,
+          type: "deduct",
+        }),
+      });
 
+      const walletData = await walletRes.json();
+
+      if (walletData.error) {
+        console.warn("Wallet deduction failed:", walletData.error);
+        showToast(walletData.error, "error");
+      } else {
+        showToast("150 coins deducted for AI post ✅", "success");
+        setUserWallet((prev) => Math.max(0, prev - 150));
+      }
+
+      // Update frontend state
+      setPosts((prev) => [postData.data, ...prev]);
+      setAllCounts((prev) => ({
+        ...prev,
+        total: prev.total + 1,
+        pending: prev.pending + 1,
+      }));
+
+      showToast("AI Post Generated & Saved Successfully! 🎉");
+
+      setPrompt("");
+      setLogo(null);
+      setCountdown(0);
+    } catch (error) {
+      console.error("Generation Error:", error);
+      showToast(error.message || "Failed to generate AI post!", "error");
+    } finally {
+      setIsGenerating(false);
+      setCountdown(0);
+    }
   };
-
 
   const handleDateChange = (id, value) => {
     setScheduleDates((prev) => ({ ...prev, [id]: value }));
@@ -817,117 +743,103 @@ export default function PostManagement() {
     }
   };
 
-const handlePost = async (post) => {
-  setIsPosting(true);
+  const handlePost = async (post) => {
+    setIsPosting(true);
 
-  try {
-    const userId = localStorage.getItem("userId");
-
-    // 1️⃣ Fetch user data
-    const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
-    if (!userRes.ok) {
-      showToast("Failed to fetch user data", "error");
-      return;
-    }
-
-    const userData = await userRes.json();
-    const subscription = userData.subscription || {};
-    const walletBalance = userData.wallet || 0;
-
-    
-
-    setUserWallet(walletBalance);
-
-    // 2️⃣ Determine deduction based on plan
-    const isFreePlan = subscription.plan === "Free";
-    const deductAmount = isFreePlan ? 100 : 50;
-
-    // 3️⃣ Check wallet before posting
-    if (isFreePlan && walletBalance < 100) {
-      showToast("Insufficient wallet balance. Please upgrade your plan.", "error");
-      setShowUpgradePlan(true);
-      return;
-    }
-
-    if (!isFreePlan && walletBalance < 50) {
-      showToast("Insufficient wallet balance. Please recharge your wallet.", "error");
-      setShowInsufficientBalance(true);
-      return;
-    }
-
-    const accountId = localStorage.getItem("accountId");
-    const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
-
-    // 4️⃣ Send post to webhook
-    const response = await fetch(
-      "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          account: accountId,
-          locationData: [
-            {
-            city: slug,
-            bookUrl: payloadDetails.website,
-            cityName: payloadDetails.locality,
-          }
-          ],
-          output: post?.aiOutput || "",
-          description: post?.description || "",
-          accessToken: session?.accessToken || "",
-        }),
-      }
-    );
-
-    let data;
     try {
-      data = await response.json();
-    } catch {
-      data = await response.text();
-    }
+      const userId = localStorage.getItem("userId");
 
-    // 5️⃣ If post success → Deduct coins
-    if (response.ok) {
-      showToast("Post successfully sent!", "success");
-      setShowSuccess(true);
-
-      // 🪙 Deduct coins based on plan
-      const walletRes = await fetch("/api/auth/signup", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          amount: deductAmount,
-          type: "deduct",
-        }),
-      });
-
-      if (walletRes.ok) {
-        const newBalance = walletBalance - deductAmount;
-        setUserWallet(newBalance);
-        localStorage.setItem("walletBalance", newBalance);
-        showToast(`${deductAmount} coins deducted from your wallet`, "info");
-      } else {
-        showToast("Post sent, but wallet deduction failed", "warning");
+      // 1️⃣ Fetch user wallet data
+      const userRes = await fetch(`/api/auth/signup?userId=${userId}`);
+      if (!userRes.ok) {
+        showToast("Failed to fetch user data", "error");
+        return;
       }
 
-    } else {
-      console.error("Webhook failed:", data);
-      showToast(`Failed to send post (Status: ${response.status})`, "error");
+      const userData = await userRes.json();
+      const walletBalance = userData.wallet || 0;
+
+      setUserWallet(walletBalance);
+
+      // 2️⃣ Check if user has sufficient balance (100 coins required for posting)
+      if (walletBalance < 50) {
+        showToast("Insufficient wallet balance. Please recharge your wallet.", "error");
+        setShowInsufficientBalance(true);
+        return;
+      }
+
+      const accountId = localStorage.getItem("accountId");
+      const payloadDetails = JSON.parse(localStorage.getItem("listingData"));
+
+      // 3️⃣ Send post to webhook
+      const response = await fetch(
+        "https://n8n.srv968758.hstgr.cloud/webhook/cc144420-81ab-43e6-8995-9367e92363b0",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            account: accountId,
+            locationData: [
+              {
+                city: slug,
+                bookUrl: payloadDetails.website,
+                cityName: payloadDetails.locality,
+              }
+            ],
+            output: post?.aiOutput || "",
+            description: post?.description || "",
+            accessToken: session?.accessToken || "",
+          }),
+        }
+      );
+
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = await response.text();
+      }
+
+      // 4️⃣ If post success → Deduct 100 coins
+      if (response.ok) {
+        showToast("Post successfully sent!", "success");
+        setShowSuccess(true);
+
+        // 🪙 Deduct 100 coins from wallet
+        const walletRes = await fetch("/api/auth/signup", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            amount: 50,
+            type: "deduct",
+          }),
+        });
+
+        if (walletRes.ok) {
+          const newBalance = walletBalance - 50;
+          setUserWallet(newBalance);
+          localStorage.setItem("walletBalance", newBalance);
+          showToast("50 coins deducted from your wallet", "info");
+        } else {
+          showToast("Post sent, but wallet deduction failed", "warning");
+        }
+
+      } else {
+        console.error("Webhook failed:", data);
+        showToast(`Failed to send post (Status: ${response.status})`, "error");
+      }
+
+    } catch (error) {
+      console.error("Post error:", error);
+      showToast("Network error: Failed to send post", "error");
+    } finally {
+      setIsPosting(false);
     }
-
-  } catch (error) {
-    console.error("Post error:", error);
-    showToast("Network error: Failed to send post", "error");
-  } finally {
-    setIsPosting(false);
-  }
-};
-
+  };
 
   const handleReject = async (id) => {
     const userId = localStorage.getItem("userId");
@@ -1002,30 +914,6 @@ const handlePost = async (post) => {
       showToast("Link copied to clipboard! 📋");
     }
   };
-
-  // useEffect(() => {    
-  //   const triggeredPosts = new Set();
-
-  //   const checkScheduledPosts = (posts) => {
-  //     const now = new Date();
-
-  //     posts?.forEach((post) => {
-  //       if (
-  //         post.status === "scheduled" &&
-  //         post.scheduledDate
-  //       ) {
-  //         const scheduledTime = new Date(post.scheduledDate);
-
-  //         if (now >= scheduledTime) {
-  //           triggeredPosts.add(post._id);
-  //         }
-  //       }
-  //     });
-  //   };
-
-  //   const interval = setInterval(checkScheduledPosts, 60000);
-  //   return () => clearInterval(interval);
-  // }, [posts]);
 
   useEffect(() => {
     fetchPosts(activeTab);
@@ -1250,7 +1138,7 @@ const handlePost = async (post) => {
         }
       `}</style>
 
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
         {toast && <Toast message={toast.message} type={toast.type} />}
         {isGenerating && <LoadingOverlay countdown={countdown} />}
         {showInsufficientBalance && (
@@ -1263,25 +1151,16 @@ const handlePost = async (post) => {
             }}
           />
         )}
-        {showUpgradePlan && (
-          <UpgradePlanModal
-            onClose={() => setShowUpgradePlan(false)}
-            onUpgrade={() => {
-              setShowUpgradePlan(false);
-              window.location.href = "/subscription";
-            }}
-          />
-        )}
         {isPosting && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-            <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-10 flex flex-col items-center space-y-6 max-w-md w-full border-4 border-white/30">
+            <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-10 flex flex-col items-center space-y-4 sm:space-y-6 max-w-md w-full border-4 border-white/30">
               <div className="relative">
                 <div className="absolute inset-0 bg-orange-300/40 rounded-full blur-2xl animate-pulse"></div>
-                <div className="text-8xl animate-bounce-slow">🚀</div>
+                <div className="text-6xl sm:text-8xl animate-bounce-slow">🚀</div>
               </div>
-              <div className="text-center space-y-3">
-                <h3 className="text-3xl font-black text-white">Publishing Post...</h3>
-                <p className="text-blue-100 text-sm">Sending to Google My Business</p>
+              <div className="text-center space-y-2 sm:space-y-3">
+                <h3 className="text-2xl sm:text-3xl font-black text-white">Publishing Post...</h3>
+                <p className="text-blue-100 text-xs sm:text-sm">Sending to Google My Business</p>
               </div>
               <div className="w-full bg-white/30 rounded-full h-2.5 overflow-hidden">
                 <div className="bg-gradient-to-r from-orange-300 via-yellow-300 to-green-300 h-full rounded-full animate-shimmer"></div>
@@ -1291,12 +1170,12 @@ const handlePost = async (post) => {
         )}
         {showSuccess && <SuccessOverlay onComplete={() => setShowSuccess(false)} />}
 
-        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-8 md:p-10 mt-16 sm:mt-8 shadow-2xl border-4 border-white">
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-3 flex items-center gap-3">
-            <Sparkles className="w-10 h-10" />
+        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 mt-16 sm:mt-8 shadow-2xl border-4 border-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
+            <Sparkles className="w-8 h-8 sm:w-10 sm:h-10" />
             Post Management
           </h1>
-          <p className="text-blue-100 text-base md:text-lg font-medium">
+          <p className="text-blue-100 text-sm sm:text-base md:text-lg font-medium">
             Create stunning GMB posts with AI in seconds ✨
           </p>
         </div>
@@ -1310,7 +1189,7 @@ const handlePost = async (post) => {
           loading={isGenerating}
         />
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4">
           {tabs.map((tab) => (
             <TabButton
               key={tab.id}
@@ -1323,7 +1202,7 @@ const handlePost = async (post) => {
         </div>
 
         {filteredPosts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredPosts.map((post) => (
               <PostCard
                 key={post._id}
@@ -1340,10 +1219,10 @@ const handlePost = async (post) => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-3xl p-16 text-center border-3 border-dashed border-gray-300 shadow-xl">
-            <div className="text-8xl mb-6">📭</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">No posts found</h3>
-            <p className="text-gray-600 text-lg">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-10 sm:p-16 text-center border-3 border-dashed border-gray-300 shadow-xl">
+            <div className="text-6xl sm:text-8xl mb-4 sm:mb-6">📭</div>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">No posts found</h3>
+            <p className="text-gray-600 text-sm sm:text-lg">
               {activeTab === "total"
                 ? "Create your first AI-powered post above!"
                 : `No ${activeTab} posts yet`}

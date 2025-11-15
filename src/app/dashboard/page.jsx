@@ -103,7 +103,7 @@ export async function checkVoiceOfMerchant(accessToken, locationName) {
 
 // --- Admin Storage Helper ---
 export async function storeUserListingsForAdmin(userEmail, listings) {
-  console.log("userEmaillll",userEmail,listings);
+  console.log("userEmaillll",userEmail,listings[0].metadata.newReviewUri);
   
   try {
     const response = await fetch('/api/admin/saveBussiness', {
@@ -123,7 +123,6 @@ export async function storeUserListingsForAdmin(userEmail, listings) {
     }
 
     const data = await response.json();
-    console.log('Listings stored for admin:', data);
     return data;
   } catch (error) {
     console.error('Error storing listings for admin:', error);
@@ -584,6 +583,9 @@ export default function DashboardPage() {
     try {
       console.log("🔄 Fetching GMB data for:", userEmail);
       const accountsData = await fetchGMBAccounts(token);
+
+      
+      
       
       console.log(`✅ Accounts fetched: ${accountsData.length}`);
 
@@ -758,6 +760,11 @@ export default function DashboardPage() {
 
         return { locationId, accountId, locality, address, title, websiteUrl };
       });
+
+   localStorage.setItem("reviewUrl",allListings[0].metadata.newReviewUri)
+      
+
+      
 
       localStorage.setItem("locationDetails", JSON.stringify(locationDetails));
 
